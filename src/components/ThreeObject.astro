@@ -69,9 +69,13 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     wall.position.y = 0.2;
     const roof = new THREE.Mesh(new THREE.ConeGeometry(0.43, 0.3, 4), std(ROOF));
     roof.position.y = 0.56; roof.rotation.y = Math.PI / 4;
-    const win = new THREE.Mesh(new THREE.PlaneGeometry(0.12, 0.12), new THREE.MeshBasicMaterial({ color: GLOW }));
-    win.position.set(0, 0.2, 0.251);
-    g.add(wall, roof, win);
+    // Front face (+z): a door centred at the base with a lit window either side.
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(0.15, 0.24), std('#5C3A2E'));
+    door.position.set(0, 0.12, 0.251);
+    const winMat = new THREE.MeshBasicMaterial({ color: GLOW });
+    const w1 = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), winMat); w1.position.set(-0.15, 0.28, 0.251);
+    const w2 = new THREE.Mesh(new THREE.PlaneGeometry(0.1, 0.1), winMat); w2.position.set(0.15, 0.28, 0.251);
+    g.add(wall, roof, door, w1, w2);
     return g;
   }
   function fire(group: THREE.Group, y = 0.25) {
@@ -120,7 +124,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
           (o.m.material as THREE.MeshBasicMaterial).opacity = 0.45 + Math.sin(t * 3 + o.a) * 0.45;
         });
       },
-      camera: { pos: [0, 1.7, 5.7] as const, look: [0, 1.05, 0] as const },
+      camera: { pos: [0, 0.95, 5.9] as const, look: [0, 0.5, 0] as const },
     };
   }
 
