@@ -1,7 +1,7 @@
 ---
 import '../styles/theme.css';
 import EmailSignup from '../components/EmailSignup.astro';
-const { title = 'Distributed Republic', description = 'Building technologically advanced, networked communities for a different way of living.', noindex = false } = Astro.props;
+const { title = 'Distributed Republic', description = 'Building technologically advanced, networked communities for a different way of living.', noindex = false, hideSignupCta = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL('/og.png', Astro.site).href;
 const nav = [
@@ -60,6 +60,14 @@ const nav = [
     <slot />
   </main>
 
+  {!hideSignupCta && (
+    <section class="section section--forest" aria-label="Keep up to date">
+      <div class="container" style="max-width:580px;text-align:center">
+        <EmailSignup tone="dark" heading="Keep up to date" blurb="Occasional notes on the project as it takes shape. No names, just your email." />
+      </div>
+    </section>
+  )}
+
   <footer class="site-footer">
     <div class="container">
       <div class="foot-grid">
@@ -79,9 +87,6 @@ const nav = [
           <div style="margin:6px 0"><a href="/contact/">Contact us</a></div>
           <div style="margin:6px 0"><a href="/events/">Upcoming events</a></div>
         </div>
-      </div>
-      <div class="foot-signup">
-        <EmailSignup tone="dark" heading="Keep up to date" blurb="Occasional notes on the project as it takes shape. Just your email." />
       </div>
       <div class="foot-bottom">© 2026 Distributed Republic. Community living.</div>
     </div>
