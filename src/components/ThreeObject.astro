@@ -131,7 +131,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
           (o.m.material as THREE.MeshBasicMaterial).opacity = 0.45 + Math.sin(t * 3 + o.a) * 0.45;
         });
       },
-      camera: { pos: [0, 0.95, 5.9] as const, look: [0, 0.5, 0] as const },
+      camera: { pos: [0, 0.95, 5.9] as const, look: [0, 0.2, 0] as const },
     };
   }
 
@@ -161,7 +161,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     group.position.y = -0.6;
     return {
       update: (t: number) => { group.rotation.y = t * 0.1; },
-      camera: { pos: [0, 3.4, 4.8] as const, look: [0, 0, 0] as const },
+      camera: { pos: [0, 3.0, 4.3] as const, look: [0, -0.2, 0] as const },
     };
   }
 
