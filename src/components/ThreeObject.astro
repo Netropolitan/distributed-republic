@@ -51,9 +51,15 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const g = new THREE.Group();
     const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.1, 0.55, 6), std(BARK));
     trunk.position.y = 0.27;
-    const canopy = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4, 0), std(FOREST));
-    canopy.position.y = 0.82;
-    g.add(trunk, canopy);
+    // Two-tuft crown in brighter sage-emerald so it reads on both the dark
+    // forest section and the light cards.
+    const crown = new THREE.Group();
+    const c1 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), std('#3DA882'));
+    c1.position.y = 0.8;
+    const c2 = new THREE.Mesh(new THREE.IcosahedronGeometry(0.27, 0), std('#63CBA2'));
+    c2.position.set(0.13, 1.05, 0.05);
+    crown.add(c1, c2);
+    g.add(trunk, crown);
     g.scale.setScalar(scale);
     return g;
   }
@@ -99,8 +105,6 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
   function buildTree(group: THREE.Group) {
     const tree = makeTree(1.7); group.add(tree);
     const canopy = tree.children[1] as THREE.Mesh;
-    const f1 = makeFigure(0.8); f1.position.set(-0.85, 0, 0.5); group.add(f1);
-    const f2 = makeFigure(0.8); f2.position.set(0.85, 0, 0.25); f2.rotation.y = -0.6; group.add(f2);
     const flies: { m: THREE.Mesh; r: number; a: number; y: number; sp: number }[] = [];
     for (let i = 0; i < 7; i++) {
       const m = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 6), new THREE.MeshBasicMaterial({ color: GLOW, transparent: true }));
