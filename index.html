@@ -118,12 +118,56 @@
       setting out our thinking. If it resonates, leave your email and we'll be in touch.
     </p>
 
-    <!-- Placeholder form. Replace action/markup with your MailerLite or Buttondown embed. -->
-    <form method="post" action="#" onsubmit="event.preventDefault(); this.querySelector('.note').textContent='Mailing list not connected yet — coming soon.';">
-      <input type="email" name="email" placeholder="you@example.com" aria-label="Email address" required />
+    <form id="signup">
+      <input type="text" name="name" placeholder="Name (optional)" aria-label="Name" autocomplete="name" />
+      <input type="email" name="email" placeholder="you@example.com" aria-label="Email address" autocomplete="email" required />
+      <!-- Honeypot: hidden from humans, bots fill it and get silently dropped. -->
+      <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"
+             style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" />
       <button type="submit">Keep me posted</button>
-      <p class="note">No spam. Just occasional updates as the idea takes shape.</p>
+      <p class="note" role="status">No spam. Just occasional updates as the idea takes shape.</p>
     </form>
+
+    <script>
+      (function () {
+        var ENDPOINT = "https://kamino.taila07ff3.ts.net/dr-signup/e085d81c18cee5b103370b6f4f600337";
+        var form = document.getElementById("signup");
+        var note = form.querySelector(".note");
+        var btn = form.querySelector("button");
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          btn.disabled = true;
+          note.style.color = "";
+          note.textContent = "Signing you up…";
+          fetch(ENDPOINT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: form.name.value.trim(),
+              email: form.email.value.trim(),
+              website: form.website.value
+            })
+          })
+            .then(function (r) { return r.json().catch(function () { return {}; }).then(function (d) { return { ok: r.ok, d: d }; }); })
+            .then(function (res) {
+              if (res.ok) {
+                form.reset();
+                note.textContent = res.d.action === "duplicate"
+                  ? "You're already on the list — thank you."
+                  : "Thank you. We'll be in touch.";
+              } else {
+                note.style.color = "#b91c1c";
+                note.textContent = "That didn't work — please check your email address and try again.";
+              }
+            })
+            .catch(function () {
+              note.style.color = "#b91c1c";
+              note.textContent = "Something went wrong. Please try again in a moment.";
+            })
+            .finally(function () { btn.disabled = false; });
+        });
+      })();
+    </script>
   </main>
 
   <footer>distributedrepublic.xyz</footer>
