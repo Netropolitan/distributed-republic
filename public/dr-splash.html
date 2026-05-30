@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Distributed Republic Splash</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root { --cream:#F4F1E0; --gold:#F0CF92; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; background:#1b2140; overflow:hidden; }
+  #app { position:fixed; inset:0; }
+  canvas { display:block; }
+  #brand { position:fixed; z-index:10; top:calc(34px + env(safe-area-inset-top)); left:0; right:0; text-align:center;
+    font-family:"Cormorant Garamond",Georgia,serif; font-weight:600; font-size:22px; letter-spacing:.5px; color:var(--cream);
+    text-shadow:0 1px 18px rgba(0,0,0,.6); transition:opacity 1.1s ease; }
+  #ui { position:fixed; inset:0; z-index:10; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+    padding:0 24px calc(56px + env(safe-area-inset-bottom)); text-align:center; pointer-events:none; transition:opacity 1.1s ease; }
+  .eyebrow { font-family:"Inter",system-ui,sans-serif; font-weight:700; font-size:12px; letter-spacing:4px; color:var(--gold);
+    text-transform:uppercase; margin-bottom:14px; text-shadow:0 1px 12px rgba(0,0,0,.65); }
+  .headline { font-family:"Cormorant Garamond",Georgia,serif; font-style:italic; font-weight:600; font-size:clamp(34px,7vw,62px);
+    line-height:1; color:var(--cream); text-shadow:0 2px 30px rgba(0,0,0,.5); max-width:15ch; }
+  .prompt { margin-top:30px; font-family:"Inter",system-ui,sans-serif; font-weight:600; font-size:14px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--cream); opacity:.85; animation:pulse 2.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:.35} 50%{opacity:.9} }
+  #entered { position:fixed; inset:0; z-index:20; background:#FAF8F4; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; gap:14px; opacity:0; pointer-events:none; transition:opacity 1.2s ease .25s; padding:24px; text-align:center; }
+  #entered.show { opacity:1; }
+  #entered .e1 { font-family:"Inter",sans-serif; font-weight:700; font-size:12px; letter-spacing:4px; text-transform:uppercase; color:#7E9A8A; }
+  #entered .e2 { font-family:"Cormorant Garamond",serif; font-weight:600; font-size:clamp(40px,8vw,72px); color:#143C30; line-height:1; }
+  #entered .e3 { font-family:"Inter",sans-serif; font-size:15px; color:#4A4A4A; }
+  @media (prefers-reduced-motion: reduce) { .prompt { animation:none; } }
+  #vig { position:fixed; inset:0; z-index:5; pointer-events:none; background:radial-gradient(ellipse 78% 68% at 50% 44%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.5) 100%); }
+</style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="vig"></div>
+  <div id="ui">
+    <div class="eyebrow">Community living</div>
+    <div class="headline">Distributed Republic</div>
+    <div class="prompt">Click anywhere to enter</div>
+  </div>
+  <div id="entered">
+    <div class="e1"></div>
+    <div class="e2"></div>
+    <div class="e3"></div>
+  </div>
+
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const MOBILE  = matchMedia('(max-width: 768px), (pointer: coarse)').matches;
+const N_FIRE  = MOBILE ? 22 : 32;   // pool; only ~5 lit at once
+const N_EMBER = MOBILE ? 20 : 46;
+const N_STAR  = MOBILE ? 60 : 130;
+const N_TREE  = MOBILE ? 12 : 20;
+
+// ---- texture helpers ----
+function radial(stops){ const s=128,c=document.createElement('canvas');c.width=c.height=s;const g=c.getContext('2d');
+  const grd=g.createRadialGradient(s/2,s/2,0,s/2,s/2,s/2); for(const [p,col] of stops) grd.addColorStop(p,col);
+  g.fillStyle=grd;g.fillRect(0,0,s,s);const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t; }
+function skyTex(stops){ const c=document.createElement('canvas');c.width=2;c.height=512;const g=c.getContext('2d');
+  const grd=g.createLinearGradient(0,0,0,512); for(const [p,col] of stops) grd.addColorStop(p,col);
+  g.fillStyle=grd;g.fillRect(0,0,2,512);const t=new THREE.CanvasTexture(c);t.needsUpdate=true;return t; }
+const T={
+  soft : radial([[0,'rgba(255,255,255,1)'],[0.25,'rgba(255,255,255,.6)'],[1,'rgba(255,255,255,0)']]),
+  moon : radial([[0,'rgba(255,252,240,1)'],[0.18,'rgba(248,238,214,.92)'],[0.5,'rgba(230,210,210,.22)'],[1,'rgba(230,210,210,0)']]),
+  fly  : radial([[0,'rgba(255,250,210,1)'],[0.35,'rgba(230,235,150,.5)'],[1,'rgba(210,230,140,0)']]),
+  ember: radial([[0,'rgba(255,238,180,1)'],[0.4,'rgba(240,150,70,.7)'],[1,'rgba(240,120,50,0)']]),
+};
+
+// ---- renderer / scene ----
+const app=document.getElementById('app');
+const renderer=new THREE.WebGLRenderer({antialias:!MOBILE});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+app.appendChild(renderer.domElement);
+
+const scene=new THREE.Scene();
+// dusky twilight sky: deep blue above, mauve, warm rose near the horizon
+scene.background=skyTex([[0,'#0a0e24'],[0.45,'#1f1d39'],[0.78,'#413343'],[1,'#54403b']]);
+scene.fog=new THREE.FogExp2(0x2c2942,0.02);
+
+const camera=new THREE.PerspectiveCamera(56,innerWidth/innerHeight,0.1,400);
+camera.position.set(0,2.7,14);
+const look=new THREE.Vector3(0,2.5,-27);
+
+scene.add(new THREE.AmbientLight(0x2c2a44,0.9));
+const skyLight=new THREE.DirectionalLight(0xaa9ab8,0.42); skyLight.position.set(6,12,-18); scene.add(skyLight);
+const fireLight=new THREE.PointLight(0xff7a2e,2.6,34,2); fireLight.position.set(-15,1.1,-19.5); scene.add(fireLight);
+
+// ---- LAYER 1 (foreground): grass + pond ----
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(600,600),new THREE.MeshStandardMaterial({color:0x2c5d36,roughness:1}));
+ground.rotation.x=-Math.PI/2; scene.add(ground);
+
+const pond=new THREE.Mesh(new THREE.CircleGeometry(8,64),new THREE.MeshStandardMaterial({color:0x1f5388,metalness:0.6,roughness:0.2}));
+pond.rotation.x=-Math.PI/2; pond.scale.set(1.7,1,1); pond.position.set(0,0.04,-9); scene.add(pond);
+
+const reedMat=new THREE.MeshStandardMaterial({color:0x12281a,roughness:1});
+const reeds=[];
+// a few clumps of thin reeds along the near + side edges of the pond
+for(const ca of [0.3,0.85,1.55,2.25,2.85]){ const rx=8*1.7, rz=8; const cxp=Math.cos(ca)*rx, czp=-9+Math.sin(ca)*rz;
+  const n=3+Math.floor(Math.random()*3);
+  for(let k=0;k<n;k++){ const h=0.9+Math.random()*0.9;
+    const reed=new THREE.Mesh(new THREE.ConeGeometry(0.045,h,5),reedMat);
+    reed.position.set(cxp+(Math.random()-0.5)*1.0, h/2, czp+(Math.random()-0.5)*1.0);
+    const tilt=(Math.random()-0.5)*0.12; reed.rotation.z=tilt;
+    reed.userData={tilt, phase:Math.random()*6.28, sway:0.05+Math.random()*0.05};
+    scene.add(reed); reeds.push(reed); } }
+
+// ---- small dock onto the pond ----
+{ const wood=new THREE.MeshStandardMaterial({color:0x2a1d12,roughness:1});
+  const deck=new THREE.Mesh(new THREE.BoxGeometry(8,0.16,1.8),wood); deck.position.set(9,0.42,-7); scene.add(deck);
+  for(const px of [6.5,11]){ for(const pz of [-6.4,-7.6]){ const post=new THREE.Mesh(new THREE.CylinderGeometry(0.08,0.08,1.1,6),wood); post.position.set(px,0.05,pz); scene.add(post); } } }
+
+// ---- sprite helper (no moon / no lake reflections) ----
+function sprite(map,color,opacity,blend){ return new THREE.Sprite(new THREE.SpriteMaterial({map,color,transparent:true,opacity,depthWrite:false,blending:blend||THREE.NormalBlending})); }
+
+// ---- stars (twinkly) ----
+const starGeo=new THREE.BufferGeometry();
+{ const p=new Float32Array(N_STAR*3),ph=new Float32Array(N_STAR),sp=new Float32Array(N_STAR);
+  for(let i=0;i<N_STAR;i++){ p[i*3]=(Math.random()-0.5)*260; p[i*3+1]=20+Math.random()*58; p[i*3+2]=-50-Math.random()*120; ph[i]=Math.random()*6.28; sp[i]=0.8+Math.random()*2.4; }
+  starGeo.setAttribute('position',new THREE.BufferAttribute(p,3));
+  starGeo.setAttribute('aPhase',new THREE.BufferAttribute(ph,1));
+  starGeo.setAttribute('aSpeed',new THREE.BufferAttribute(sp,1)); }
+const starMat=new THREE.ShaderMaterial({ transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+  uniforms:{ uTime:{value:0}, uTex:{value:T.soft}, uSize:{value: MOBILE?96:80}, uColor:{value:new THREE.Color(0xf8f6fc)} },
+  vertexShader:`attribute float aPhase; attribute float aSpeed; uniform float uTime; uniform float uSize; varying float vA;
+    void main(){ float tw=0.45+0.55*sin(uTime*aSpeed+aPhase); vA=0.34+0.9*tw*tw;
+      vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=uSize*(0.55+0.6*tw)/max(-mv.z,0.001); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`uniform sampler2D uTex; uniform vec3 uColor; varying float vA;
+    void main(){ vec4 t=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(uColor, t.a*vA); }` });
+scene.add(new THREE.Points(starGeo,starMat));
+
+// ---- shooting star (about once a minute) ----
+const shoot=sprite(T.soft,0xfdf6e3,0,THREE.AdditiveBlending); shoot.position.set(0,40,-58); scene.add(shoot);
+let shootActive=false, shootT0=0; const shootDur=1.2, shootFrom=new THREE.Vector3(), shootTo=new THREE.Vector3(); let shootNext=6;
+
+// ---- LAYER 3 (background): homestead among the trees ----
+const barkMat=new THREE.MeshStandardMaterial({color:0x101a16,roughness:1});
+const leafMat=new THREE.MeshStandardMaterial({color:0x0d2a18,roughness:1});
+const leafNear=new THREE.Color(0x0d2a18), leafFar=new THREE.Color(0x37485e);
+function tree(x,z){ const g=new THREE.Group(); const sc=0.8+Math.random()*0.95; const trunkH=1.2*sc;
+  const fade=Math.min(Math.max((-z)/44,0),1)*0.72; // aerial perspective: far trees tint dusky-blue
+  const lm=new THREE.MeshStandardMaterial({color:leafNear.clone().lerp(leafFar,fade),roughness:1});
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.11*sc,0.18*sc,trunkH,6),barkMat); trunk.position.y=trunkH/2; g.add(trunk);
+  if(Math.random()<0.6){ let y=trunkH,r=1.5*sc,h=1.7*sc; for(let k=0;k<3;k++){ const c=new THREE.Mesh(new THREE.ConeGeometry(r,h,7),lm); c.position.y=y+h*0.42; g.add(c); y+=h*0.6; r*=0.72; h*=0.85; } }
+  else { const base=trunkH+0.8*sc; for(let k=0;k<3;k++){ const b=new THREE.Mesh(new THREE.IcosahedronGeometry((0.9+Math.random()*0.5)*sc,0),lm);
+    b.position.set((Math.random()-0.5)*1.0*sc, base+(Math.random()-0.2)*0.7*sc, (Math.random()-0.5)*0.7*sc); g.add(b); } }
+  g.position.set(x,0,z); g.rotation.y=Math.random()*Math.PI; scene.add(g); }
+const lamps=[];
+function hut(x,z,s,lit){ const grp=new THREE.Group();
+  const body=new THREE.Mesh(new THREE.BoxGeometry(3*s,2.2*s,2.4*s),new THREE.MeshStandardMaterial({color:0x7a5634,roughness:1})); body.position.y=1.1*s; grp.add(body);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(2.5*s,1.6*s,4),new THREE.MeshStandardMaterial({color:0xa6452f,roughness:0.95})); roof.position.y=2.2*s+0.8*s; roof.rotation.y=Math.PI/4; grp.add(roof);
+  if(lit){ for(const wx of [0.6*s,-0.6*s]){ const m=new THREE.MeshBasicMaterial({color:0xffba6a,transparent:true});
+      const w=new THREE.Mesh(new THREE.PlaneGeometry(0.5*s,0.62*s),m); w.position.set(wx,1.05*s,1.21*s); grp.add(w);
+      const on=Math.random()<0.5; m.opacity=on?1:0; lamps.push({mat:m,on,op:on?1:0,next:2+Math.random()*12}); } }
+  grp.position.set(x,0,z); grp.rotation.y=(Math.random()-0.5)*0.5; scene.add(grp); }
+
+// homestead nestled in the back treeline
+hut(2,-24,1.15,true); hut(-9,-27,0.9,true); hut(11,-22,1.0,true); hut(-16,-30,0.85,true); hut(17,-28,0.95,true); hut(-3,-32,0.8,true);
+// trees filling the back layer, interleaved with the huts
+for(let i=0;i<N_TREE;i++){ tree(-40+i*(80/N_TREE)+(Math.random()-0.5)*3, -34-Math.random()*8); }
+// trees flanking the pond (mid depth) + framing the foreground edges
+tree(-24,-6); tree(25,-8); tree(-28,3); tree(29,4); tree(-22,-16); tree(23,-15);
+tree(-31,-11); tree(32,-13); tree(-27,-21); tree(28,-22); tree(-34,-3); tree(35,-5); tree(-20,7); tree(22,8); tree(-37,-14); tree(38,-16);
+// fill the far-LEFT and far-RIGHT edges of the frame (large x, mid depth so they read at the screen edges)
+tree(-28,-18); tree(-33,-20); tree(-38,-17); tree(-43,-21); tree(-48,-19);
+tree(28,-18); tree(33,-20); tree(38,-17); tree(43,-21); tree(48,-19);
+// far-off treeline along the horizon (fogs softly into the dusk)
+const farMat=new THREE.MeshStandardMaterial({color:0x232f44,roughness:1});
+for(let i=0;i<26;i++){ const h=1.6+Math.random()*1.8; const c=new THREE.Mesh(new THREE.ConeGeometry(0.8+Math.random()*0.4,h,6),farMat); c.position.set(-54+i*4.2+(Math.random()-0.5)*2,h/2,-50-Math.random()*7); scene.add(c); }
+
+// ---- LAYER 2 (midground): campfire on the far bank ----
+for(let i=0;i<3;i++){ const log=new THREE.Mesh(new THREE.CylinderGeometry(0.12,0.12,1.7,6),new THREE.MeshStandardMaterial({color:0x241a12,roughness:1}));
+  log.position.set(-15,0.18,-19.5); log.rotation.z=Math.PI/2; log.rotation.y=i*Math.PI/3; scene.add(log); }
+const fireGlow=sprite(T.ember,0xffb060,0.92,THREE.AdditiveBlending); fireGlow.scale.set(3,3.4,1); fireGlow.position.set(-15,0.85,-19.5); scene.add(fireGlow);
+
+const emPos=new Float32Array(N_EMBER*3), emV=[], emBase=[];
+function resetEmber(i,init){ const x=-15+(Math.random()-0.5)*1.1; emPos[i*3]=x; emPos[i*3+1]=init?0.3+Math.random()*2.4:0.3; emPos[i*3+2]=-19.5+(Math.random()-0.5)*0.8; emV[i]=0.32+Math.random()*0.55; emBase[i]=x; }
+for(let i=0;i<N_EMBER;i++) resetEmber(i,true);
+const emGeo=new THREE.BufferGeometry(); emGeo.setAttribute('position',new THREE.BufferAttribute(emPos,3));
+scene.add(new THREE.Points(emGeo,new THREE.PointsMaterial({map:T.ember,color:0xffc070,size:0.4,transparent:true,opacity:0.95,depthWrite:false,blending:THREE.AdditiveBlending})));
+
+// ---- LAYER 1 (foreground): fireflies, tiny + sparse twinkle (~5 lit) ----
+const flPos=new Float32Array(N_FIRE*3), flPhase=new Float32Array(N_FIRE), flSpeed=new Float32Array(N_FIRE);
+for(let i=0;i<N_FIRE;i++){ flPos[i*3]=(Math.random()-0.5)*60; flPos[i*3+1]=0.4+Math.random()*2.8; flPos[i*3+2]=-13+Math.random()*22; flPhase[i]=Math.random()*Math.PI*2; flSpeed[i]=0.18+Math.random()*0.2; }
+const flGeo=new THREE.BufferGeometry();
+flGeo.setAttribute('position',new THREE.BufferAttribute(flPos,3));
+flGeo.setAttribute('aPhase',new THREE.BufferAttribute(flPhase,1));
+flGeo.setAttribute('aSpeed',new THREE.BufferAttribute(flSpeed,1));
+const flMat=new THREE.ShaderMaterial({ transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+  uniforms:{ uTime:{value:0}, uTex:{value:T.fly}, uSize:{value: MOBILE?150:120}, uColor:{value:new THREE.Color(0xf2f0a8)} },
+  vertexShader:`attribute float aPhase; attribute float aSpeed; uniform float uTime; uniform float uSize; varying float vA;
+    void main(){ float s=sin(uTime*aSpeed+aPhase); float a=smoothstep(0.82,1.0,s); vA=a;
+      vec3 p=position; p.y+=sin(uTime*0.22+aPhase)*0.28; p.x+=sin(uTime*0.13+aPhase)*0.24;
+      vec4 mv=modelViewMatrix*vec4(p,1.0); gl_PointSize=uSize*a/max(-mv.z,0.001); gl_Position=projectionMatrix*mv; }`,
+  fragmentShader:`uniform sampler2D uTex; uniform vec3 uColor; varying float vA;
+    void main(){ if(vA<=0.02) discard; vec4 t=texture2D(uTex,gl_PointCoord); gl_FragColor=vec4(uColor, t.a*vA); }` });
+scene.add(new THREE.Points(flGeo,flMat));
+
+// ---- atmosphere: afterglow, living water, mist, fire-pool, smoke, hero stars, foreground ----
+// horizon afterglow (the last warmth of the set sun behind the trees)
+const afterglow=sprite(radial([[0,'rgba(214,138,96,0.55)'],[0.5,'rgba(150,92,96,0.16)'],[1,'rgba(150,92,96,0)']]),0xffffff,0.55,THREE.AdditiveBlending);
+afterglow.scale.set(78,20,1); afterglow.position.set(-4,4.5,-46); scene.add(afterglow);
+// water: faint dusk-sky sheen on the far half of the pond + drifting shimmer streaks
+const sheen=sprite(T.soft,0x7077a0,0.16,THREE.AdditiveBlending); sheen.scale.set(28,9,1); sheen.position.set(0,0.05,-13); scene.add(sheen);
+const shimmers=[];
+for(let i=0;i<3;i++){ const sh=sprite(T.soft,0x9fb0d0,0.1,THREE.AdditiveBlending); sh.scale.set(8,0.7,1); sh.position.set(-7+i*7,0.06,-7-i*2); scene.add(sh); shimmers.push(sh); }
+// (lake mist removed; keeps the scene calmer)
+// campfire ground glow-pool
+const firePool=sprite(T.ember,0xff8a3c,0.5,THREE.AdditiveBlending); firePool.scale.set(6,2.4,1); firePool.position.set(-15,0.1,-19.5); scene.add(firePool);
+// campfire smoke
+const NSMOKE=14, smPos=new Float32Array(NSMOKE*3);
+function resetSmoke(i,init){ smPos[i*3]=-15+(Math.random()-0.5)*0.5; smPos[i*3+1]=init?1+Math.random()*5:1.2; smPos[i*3+2]=-19.5+(Math.random()-0.5)*0.5; }
+for(let i=0;i<NSMOKE;i++) resetSmoke(i,true);
+const smGeo=new THREE.BufferGeometry(); smGeo.setAttribute('position',new THREE.BufferAttribute(smPos,3));
+const smTex=radial([[0,'rgba(160,160,172,0.5)'],[0.5,'rgba(135,135,150,0.16)'],[1,'rgba(135,135,150,0)']]);
+scene.add(new THREE.Points(smGeo,new THREE.PointsMaterial({map:smTex,color:0x9a9ab0,size:1.7,transparent:true,opacity:0.2,depthWrite:false})));
+// hero stars (a few brighter, slow twinkle)
+const heroStars=[];
+for(let i=0;i<6;i++){ const hs=sprite(T.soft,0xffffff,0,THREE.AdditiveBlending); hs.scale.set(1.5,1.5,1);
+  hs.position.set((Math.random()-0.5)*120,28+Math.random()*38,-55-Math.random()*40); scene.add(hs);
+  heroStars.push({s:hs,ph:Math.random()*6.28,sp:0.18+Math.random()*0.24}); }
+// foreground framing grass (dark, close to camera, at the corners)
+const fgMat=new THREE.MeshBasicMaterial({color:0x05130c});
+for(const gx of [-15,-13,-11.3,11.3,13,15]){ const h=2.2+Math.random()*2; const bl=new THREE.Mesh(new THREE.ConeGeometry(0.16,h,4),fgMat);
+  bl.position.set(gx,h/2-0.6,6+(Math.random()-0.5)*1.5); bl.rotation.z=(Math.random()-0.5)*0.28; scene.add(bl); }
+
+// ---- animate ----
+const clock=new THREE.Clock(); let running=true;
+function frame(){ const t=clock.getElapsedTime();
+  camera.position.x=0; camera.position.y=2.7+Math.sin(t*0.08)*0.06; camera.lookAt(look);
+  const fl=0.88+Math.sin(t*1.05)*0.07+Math.sin(t*2.3)*0.03;
+  fireLight.intensity=1.7*fl+0.5; fireGlow.scale.set(3.4*fl,2.7*fl,1);
+  firePool.material.opacity=0.4*fl+0.12; firePool.scale.set(6*fl,2.4*fl,1);
+  for(let i=0;i<shimmers.length;i++){ shimmers[i].position.x=-7+i*7+Math.sin(t*0.22+i)*2.5; shimmers[i].material.opacity=0.05+0.08*Math.abs(Math.sin(t*0.32+i*1.3)); }
+  sheen.material.opacity=0.13+0.04*Math.sin(t*0.26);
+  for(let i=0;i<NSMOKE;i++){ smPos[i*3+1]+=0.009; smPos[i*3]+=0.004; if(smPos[i*3+1]>7.5) resetSmoke(i,false); } smGeo.attributes.position.needsUpdate=true;
+  for(const h of heroStars){ h.s.material.opacity=0.25+0.6*Math.pow(Math.max(0,Math.sin(t*h.sp+h.ph)),2); }
+  for(let i=0;i<N_EMBER;i++){ emPos[i*3+1]+=emV[i]*0.006; emPos[i*3]=emBase[i]+Math.sin(t*0.7+i)*0.16; if(emPos[i*3+1]>2.4) resetEmber(i,false); }
+  emGeo.attributes.position.needsUpdate=true;
+  flMat.uniforms.uTime.value=t;
+  starMat.uniforms.uTime.value=t;
+  for(const rd of reeds){ rd.rotation.z=rd.userData.tilt+Math.sin(t*0.55+rd.userData.phase)*rd.userData.sway; }
+  for(const lp of lamps){ if(t>lp.next){ lp.on=Math.random()<0.5; lp.next=t+9+Math.random()*8; } const tg=lp.on?1:0; lp.op+=(tg-lp.op)*0.045; lp.mat.opacity=lp.op; }
+  if(!shootActive && t>shootNext){ shootActive=true; shootT0=t; const sx=(Math.random()-0.5)*70, sy=34+Math.random()*12, dir=Math.random()<0.5?1:-1;
+    shootFrom.set(sx,sy,-58); shootTo.set(sx+(20+Math.random()*16)*dir, sy-16-Math.random()*8,-58);
+    shoot.material.rotation=Math.atan2(shootTo.y-shootFrom.y,shootTo.x-shootFrom.x); }
+  if(shootActive){ const sp=(t-shootT0)/shootDur; if(sp>=1){ shootActive=false; shoot.material.opacity=0; shootNext=t+48+Math.random()*28; }
+    else { shoot.position.lerpVectors(shootFrom,shootTo,sp); shoot.material.opacity=Math.sin(sp*Math.PI)*0.9; const L=7+Math.sin(sp*Math.PI)*5; shoot.scale.set(L,0.5,1); } }
+  renderer.render(scene,camera); if(running) requestAnimationFrame(frame); }
+camera.lookAt(look);
+if(REDUCED){ flMat.uniforms.uTime.value=1.2; starMat.uniforms.uTime.value=1.2; renderer.render(scene,camera); } else { requestAnimationFrame(frame); }
+
+// ---- interaction ----
+let entered=false;
+function enter(){ if(entered) return; entered=true;
+  document.getElementById('ui').style.opacity='0';
+  try { parent.postMessage('dr-splash-enter','*'); } catch(e){}
+  setTimeout(()=>{ running=false; },1600); }
+addEventListener('click',enter); addEventListener('keydown',enter);
+addEventListener('wheel',enter,{passive:true}); addEventListener('touchstart',enter,{passive:true});
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+</script>
+</body>
+</html>

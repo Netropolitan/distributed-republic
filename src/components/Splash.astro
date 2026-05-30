@@ -1,0 +1,49 @@
+---
+// Entry splash: overlays the page with the approved dusk-lakeside three.js scene
+// (public/dr-splash.html in an iframe). Click / scroll / key to enter; the iframe
+// postMessages the parent, which fades the overlay out. Shows once per session.
+---
+<div id="dr-splash" class="dr-splash" role="dialog" aria-label="Welcome to Distributed Republic">
+  <iframe src="/dr-splash.html" title="Distributed Republic intro" loading="eager"></iframe>
+  <button id="dr-splash-skip" class="dr-splash__skip" type="button">Skip intro</button>
+</div>
+
+<style>
+  .dr-splash { position: fixed; inset: 0; z-index: 9999; background: #0b1f1a; opacity: 1; transition: opacity 1s ease; }
+  .dr-splash.is-leaving { opacity: 0; pointer-events: none; }
+  .dr-splash iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .dr-splash__skip {
+    position: fixed; top: 16px; right: 16px; z-index: 10000;
+    background: rgba(0,0,0,0.28); color: #FAF8F4; border: 1px solid rgba(255,255,255,0.45);
+    border-radius: 999px; padding: 8px 16px; font: 600 13px Inter, sans-serif; cursor: pointer;
+  }
+  .dr-splash__skip:hover { background: rgba(0,0,0,0.45); }
+</style>
+
+<!-- Runs before paint: if already seen this session, hide instantly (no flash) and don't lock scroll. -->
+<script is:inline>
+  try {
+    if (sessionStorage.getItem('dr-splash-seen')) {
+      var s = document.getElementById('dr-splash');
+      if (s) s.style.display = 'none';
+    } else {
+      document.documentElement.style.overflow = 'hidden';
+    }
+  } catch (e) {}
+</script>
+
+<script>
+  const el = document.getElementById('dr-splash');
+  function dismiss() {
+    if (!el || el.dataset.done) return;
+    el.dataset.done = '1';
+    el.classList.add('is-leaving');
+    try { sessionStorage.setItem('dr-splash-seen', '1'); } catch (e) {}
+    document.documentElement.style.overflow = '';
+    setTimeout(() => el.remove(), 1100);
+  }
+  // Already seen -> remove entirely.
+  try { if (el && sessionStorage.getItem('dr-splash-seen')) { el.remove(); } } catch (e) {}
+  window.addEventListener('message', (e) => { if (e.data === 'dr-splash-enter') dismiss(); });
+  document.getElementById('dr-splash-skip')?.addEventListener('click', dismiss);
+</script>

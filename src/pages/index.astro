@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import ThreeObject from '../components/ThreeObject.astro';
+import Splash from '../components/Splash.astro';
 const pillars = [
   { t: 'Campus', d: 'Shared kitchens, workshops, gardens and gathering halls. The physical and social commons where everyday life happens together.' },
   { t: 'Curation', d: 'Who joins, how we welcome them, and how we share what we have. The careful stewardship of people, places, and pooled resources so a community keeps its character as it grows.' },
@@ -9,6 +10,7 @@ const pillars = [
 ];
 ---
 <Base title="Distributed Republic · Community living" description="We explore and build networked communities under an anarchic-agreements model: shared places, shared work, and the agreements we make together.">
+  <Splash />
   <section class="container">
     <div class="hero">
       <div>
