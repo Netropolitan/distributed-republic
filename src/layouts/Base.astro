@@ -98,6 +98,8 @@ const nav = [
       box-shadow: 0 6px 20px rgba(0,0,0,0.18); transition: background .15s ease, transform .15s ease;
     }
     html.dr-splash-active .dr-splash-btn { display: none; }
+    /* Match the accessibility FAB, which moves to right:16px/bottom:16px on mobile. */
+    @media (max-width: 768px) { .dr-splash-btn { right: 16px; bottom: 80px; } }
     .dr-splash-btn:hover, .dr-splash-btn:focus-visible { background: #FAF8F4; transform: translateY(-1px); outline: none; }
     .dr-splash-btn:hover svg path, .dr-splash-btn:focus-visible svg path { fill: #065F46; }
     .dr-splash-btn svg { width: 26px; height: 26px; }
