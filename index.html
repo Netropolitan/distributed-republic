@@ -113,7 +113,7 @@
     <p class="eyebrow">Coming soon</p>
     <h1>Distributed Republic</h1>
     <p class="lede">
-      A project exploring how we live together differently &mdash; technologically
+      A project exploring how we live together differently: technologically
       advanced communities and distributed networks, built deliberately. We're
       setting out our thinking. If it resonates, leave your email and we'll be in touch.
     </p>
@@ -153,11 +153,11 @@
               if (res.ok) {
                 form.reset();
                 note.textContent = res.d.action === "duplicate"
-                  ? "You're already on the list — thank you."
+                  ? "You're already on the list. Thank you."
                   : "Thank you. We'll be in touch.";
               } else {
                 note.style.color = "#b91c1c";
-                note.textContent = "That didn't work — please check your email address and try again.";
+                note.textContent = "That didn't work. Please check your email address and try again.";
               }
             })
             .catch(function () {
