@@ -1,0 +1,83 @@
+---
+// Email-only "keep up to date" signup. No names — just an email address.
+// Posts to the existing DR signup Funnel endpoint (-> Automation #20 -> table 293).
+// tone: 'dark' (footer / forest bg) | 'light' (cream sections).
+const {
+  tone = 'light',
+  heading = 'Keep up to date',
+  blurb = 'Occasional updates on the project. Just your email, nothing else.',
+} = Astro.props;
+---
+<div class={`dr-signup dr-signup--${tone}`}>
+  {heading && <p class="dr-signup__heading">{heading}</p>}
+  {blurb && <p class="dr-signup__blurb">{blurb}</p>}
+  <form class="dr-signup-form" novalidate>
+    <input class="dr-signup__email" type="email" name="email" placeholder="you@example.com" aria-label="Email address" autocomplete="email" required />
+    <!-- Honeypot: hidden from people, bots fill it and get dropped. -->
+    <input class="dr-signup__hp" type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" />
+    <button class="dr-signup__btn" type="submit">Sign up</button>
+  </form>
+  <p class="dr-signup__note" role="status" aria-live="polite"></p>
+</div>
+
+<style>
+  .dr-signup__heading { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .dr-signup__blurb { font-size: 14px; margin: 0 0 14px; max-width: 42ch; }
+  .dr-signup-form { display: flex; gap: 8px; flex-wrap: wrap; }
+  .dr-signup__email {
+    flex: 1 1 200px; min-width: 0; padding: 12px 14px; font-size: 16px; font-family: var(--body);
+    border-radius: 10px; border: 1px solid var(--line); background: var(--cream); color: var(--charcoal);
+  }
+  .dr-signup__email:focus { outline: 2px solid var(--decorative); border-color: var(--decorative); }
+  .dr-signup__hp { position: absolute; left: -9999px; width: 1px; height: 1px; }
+  .dr-signup__btn {
+    flex: 0 0 auto; padding: 12px 22px; border-radius: 10px; border: 0; cursor: pointer;
+    font: 600 15px var(--body); background: var(--forest); color: var(--cream); transition: background .15s ease;
+  }
+  .dr-signup__btn:hover { background: var(--deep); }
+  .dr-signup__note { font-size: 13.5px; min-height: 1.2em; margin: 10px 0 0; }
+
+  /* Dark tone (footer / forest background) */
+  .dr-signup--dark .dr-signup__heading { color: var(--cream); }
+  .dr-signup--dark .dr-signup__blurb { color: var(--sage-soft); }
+  .dr-signup--dark .dr-signup__email { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.28); color: var(--cream); }
+  .dr-signup--dark .dr-signup__email::placeholder { color: rgba(255,255,255,0.55); }
+  .dr-signup--dark .dr-signup__btn { background: var(--cream); color: var(--forest); }
+  .dr-signup--dark .dr-signup__btn:hover { background: #fff; }
+  .dr-signup--dark .dr-signup__note { color: var(--sage); }
+
+  /* Light tone */
+  .dr-signup--light .dr-signup__heading { color: var(--forest); }
+  .dr-signup--light .dr-signup__blurb { color: var(--body-grey); }
+  .dr-signup--light .dr-signup__note { color: var(--body-grey); }
+</style>
+
+<script>
+  const ENDPOINT = 'https://kamino.taila07ff3.ts.net/dr-signup/e085d81c18cee5b103370b6f4f600337';
+  document.querySelectorAll('.dr-signup-form').forEach((form) => {
+    const note = form.parentElement?.querySelector('.dr-signup__note');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = form as HTMLFormElement;
+      if (!f.checkValidity()) { f.reportValidity(); return; }
+      const email = (f.elements.namedItem('email') as HTMLInputElement).value.trim();
+      const hp = (f.elements.namedItem('website') as HTMLInputElement).value;
+      if (hp) return; // honeypot tripped
+      if (note) note.textContent = 'Signing up…';
+      try {
+        const res = await fetch(ENDPOINT, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, website: hp }),
+        });
+        const d = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error();
+        f.reset();
+        if (note) note.textContent = (d && d.action === 'duplicate')
+          ? "You're already on the list. Thank you."
+          : 'Thank you. We will keep you posted.';
+      } catch (err) {
+        if (note) note.textContent = "That didn't work, please check your email and try again.";
+      }
+    });
+  });
+</script>

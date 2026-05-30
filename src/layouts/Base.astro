@@ -1,5 +1,6 @@
 ---
 import '../styles/theme.css';
+import EmailSignup from '../components/EmailSignup.astro';
 const { title = 'Distributed Republic', description = 'Building technologically advanced, networked communities for a different way of living.', noindex = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL('/og.png', Astro.site).href;
@@ -78,6 +79,9 @@ const nav = [
           <div style="margin:6px 0"><a href="/contact/">Contact us</a></div>
           <div style="margin:6px 0"><a href="/events/">Upcoming events</a></div>
         </div>
+      </div>
+      <div class="foot-signup">
+        <EmailSignup tone="dark" heading="Keep up to date" blurb="Occasional notes on the project as it takes shape. Just your email." />
       </div>
       <div class="foot-bottom">© 2026 Distributed Republic. Community living.</div>
     </div>

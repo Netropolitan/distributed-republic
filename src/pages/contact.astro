@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import EmailSignup from '../components/EmailSignup.astro';
 ---
 <Base title="Contact · Distributed Republic" description="Get in touch with Distributed Republic, whether you are a prospective co-founder, resident, collaborator, or know of a place that might be a fit.">
   <section class="container section">
@@ -28,6 +29,12 @@ import Base from '../layouts/Base.astro';
           <p id="dr-contact-status" role="status" aria-live="polite" style="margin:0;min-height:1.2em"></p>
         </div>
       </form>
+    </div>
+  </section>
+
+  <section class="section section--cream2">
+    <div class="container" style="max-width:560px">
+      <EmailSignup tone="light" heading="Not ready to reach out?" blurb="Leave your email and we will keep you up to date as the project takes shape. No names, no spam." />
     </div>
   </section>
 

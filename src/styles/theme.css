@@ -120,6 +120,7 @@ a { color: var(--deep); text-underline-offset: 3px; }
 .site-footer { background: var(--forest-dark); color: var(--sage-soft); padding: 64px 0 40px; }
 .site-footer a { color: var(--cream); text-decoration: none; }
 .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 36px; margin-bottom: 40px; }
+.foot-signup { max-width: 460px; margin-bottom: 36px; }
 .foot-bottom { border-top: 1px solid rgba(255,255,255,0.12); padding-top: 22px; font-size: 13.5px; color: var(--sage); }
 
 @media (max-width: 860px) {
