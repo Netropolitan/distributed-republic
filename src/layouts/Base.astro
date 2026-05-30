@@ -97,8 +97,10 @@ const nav = [
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 6px 20px rgba(0,0,0,0.18); transition: background .15s ease, transform .15s ease;
     }
-    .dr-splash-btn:hover { background: #0D7555; transform: translateY(-1px); }
+    .dr-splash-btn:hover, .dr-splash-btn:focus-visible { background: #FAF8F4; transform: translateY(-1px); outline: none; }
+    .dr-splash-btn:hover svg path, .dr-splash-btn:focus-visible svg path { fill: #065F46; }
     .dr-splash-btn svg { width: 26px; height: 26px; }
+    .dr-splash-btn svg path { transition: fill .15s ease; }
   </style>
   <script>
     document.getElementById('dr-splash-btn')?.addEventListener('click', () => {
