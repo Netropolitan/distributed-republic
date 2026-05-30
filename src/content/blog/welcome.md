@@ -5,7 +5,7 @@ pubDate: 2026-05-30
 tags: [community, governance]
 ---
 
-This is a placeholder post. The real writing will come from Emi and Jamie.
+This is a placeholder post. The real writing will come from Emilija and Jamie.
 
 Distributed Republic is an exploration: how do we build and join communities that live well together? Not as a product, but as a values-led project. We are looking for the right people and the right places.
 
