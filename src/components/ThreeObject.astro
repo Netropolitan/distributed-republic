@@ -13,9 +13,9 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
 </figure>
 
 <style>
-  .three-object { position: relative; margin: 0; width: 100%; height: var(--three-h); }
-  .three-object__mount { position: absolute; inset: 0; }
-  .three-object__mount canvas { display: block; width: 100% !important; height: 100% !important; }
+  .three-object { position: relative; margin: 0; width: 100%; max-width: 100%; height: var(--three-h); overflow: hidden; }
+  .three-object__mount { position: absolute; inset: 0; overflow: hidden; }
+  .three-object__mount :global(canvas) { display: block; max-width: 100%; }
   .three-object__fallback {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
     width: 38%; max-width: 180px; height: auto; opacity: 0.92;
@@ -191,7 +191,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     let renderer: THREE.WebGLRenderer;
     try { renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' }); } catch (e) { return; }
     const w = mount.clientWidth || 400, h = mount.clientHeight || 400;
-    renderer.setPixelRatio(DPR); renderer.setSize(w, h, false); mount.appendChild(renderer.domElement);
+    renderer.setPixelRatio(DPR); renderer.setSize(w, h); mount.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     scene.add(new THREE.AmbientLight(0xffffff, 0.9));
@@ -210,7 +210,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     camera.position.set(...built.camera.pos); camera.lookAt(new THREE.Vector3(...built.camera.look));
     el.classList.add('is-live');
 
-    function resize() { const cw = mount!.clientWidth, ch = mount!.clientHeight; if (!cw || !ch) return; camera.aspect = cw / ch; camera.updateProjectionMatrix(); renderer.setSize(cw, ch, false); }
+    function resize() { const cw = mount!.clientWidth, ch = mount!.clientHeight; if (!cw || !ch) return; camera.aspect = cw / ch; camera.updateProjectionMatrix(); renderer.setSize(cw, ch); }
     window.addEventListener('resize', () => requestAnimationFrame(resize), { passive: true });
 
     const clock = new THREE.Clock();

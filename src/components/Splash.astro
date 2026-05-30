@@ -29,6 +29,7 @@
       var s = document.getElementById('dr-splash'); if (s) s.style.display = 'none';
     } else {
       document.documentElement.style.overflow = 'hidden';
+      document.documentElement.classList.add('dr-splash-active');
     }
   } catch (e) {}
 </script>
@@ -43,6 +44,7 @@
     el.style.display = 'block';
     frame.src = '/dr-splash.html'; // reload so the scene + prompt restart fresh
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.classList.add('dr-splash-active');
   }
   function dismiss() {
     if (!el || el.dataset.done === '1') return;
@@ -50,6 +52,7 @@
     el.classList.add('is-leaving');
     try { sessionStorage.setItem('dr-splash-seen', '1'); } catch (e) {}
     document.documentElement.style.overflow = '';
+    document.documentElement.classList.remove('dr-splash-active');
     setTimeout(() => { el.style.display = 'none'; if (frame) frame.src = 'about:blank'; }, 1100);
   }
   window.addEventListener('message', (e) => { if (e.data === 'dr-splash-enter') dismiss(); });
