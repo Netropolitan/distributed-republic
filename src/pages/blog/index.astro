@@ -5,7 +5,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft))
   .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
-<Base title="Blog — Distributed Republic">
+<Base title="Blog · Distributed Republic" description="Notes from the commons: thinking out loud about community living, governance, and the places we are exploring.">
   <section class="container section">
     <p class="eyebrow">Blog</p>
     <h1>Notes from the commons.</h1>

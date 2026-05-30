@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 ---
-<Base title="Contact — Distributed Republic">
+<Base title="Contact · Distributed Republic" description="Get in touch with Distributed Republic, whether you are a prospective co-founder, resident, collaborator, or know of a place that might be a fit.">
   <section class="container section">
     <div class="hero" style="padding-top:0">
       <div>
@@ -53,7 +53,7 @@ import Base from '../layouts/Base.astro';
       const data = Object.fromEntries(new FormData(form).entries());
       if ((data as any).company) return; // honeypot tripped
       if (!CONTACT_ENDPOINT) {
-        if (status) status.textContent = 'Thanks — the contact form is not connected yet. Please email jamie@bykovbrett.net for now.';
+        if (status) status.textContent = 'Thanks. The contact form is not connected yet, so please email jamie@bykovbrett.net for now.';
         return;
       }
       if (status) status.textContent = 'Sending…';
