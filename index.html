@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Distributed Republic</title>
+  <meta name="description" content="Building technologically advanced communities and distributed networks for a different way of living." />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --ink: #0f1115;
+      --paper: #f7f5ef;
+      --muted: #6b7280;
+      --accent: #2f6f5e;
+      --line: rgba(15, 17, 21, 0.12);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: ui-serif, Georgia, "Times New Roman", serif;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .wrap {
+      flex: 1;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: clamp(2.5rem, 8vw, 6rem) 1.5rem 3rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .eyebrow {
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 1.5rem;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 6vw, 3.4rem);
+      line-height: 1.08;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin: 0 0 1.25rem;
+    }
+    .lede {
+      font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+      color: #2b2f36;
+      max-width: 56ch;
+      margin: 0 0 2.5rem;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      max-width: 460px;
+    }
+    input[type="email"] {
+      flex: 1 1 220px;
+      padding: 0.85rem 1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+    }
+    input[type="email"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(47, 111, 94, 0.15);
+    }
+    button {
+      padding: 0.85rem 1.4rem;
+      font-size: 1rem;
+      font-family: inherit;
+      font-weight: 600;
+      color: #fff;
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button:hover { background: #265848; }
+    .note {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 1rem 0 0;
+    }
+    footer {
+      border-top: 1px solid var(--line);
+      padding: 1.5rem;
+      text-align: center;
+      font-family: ui-monospace, "SF Mono", Menlo, monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <p class="eyebrow">Coming soon</p>
+    <h1>Distributed Republic</h1>
+    <p class="lede">
+      A project exploring how we live together differently &mdash; technologically
+      advanced communities and distributed networks, built deliberately. We're
+      setting out our thinking. If it resonates, leave your email and we'll be in touch.
+    </p>
+
+    <!-- Placeholder form. Replace action/markup with your MailerLite or Buttondown embed. -->
+    <form method="post" action="#" onsubmit="event.preventDefault(); this.querySelector('.note').textContent='Mailing list not connected yet — coming soon.';">
+      <input type="email" name="email" placeholder="you@example.com" aria-label="Email address" required />
+      <button type="submit">Keep me posted</button>
+      <p class="note">No spam. Just occasional updates as the idea takes shape.</p>
+    </form>
+  </main>
+
+  <footer>distributedrepublic.xyz</footer>
+</body>
+</html>
