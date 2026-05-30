@@ -1,10 +1,11 @@
 ---
 // Entry splash: overlays the page with the approved dusk-lakeside three.js scene
 // (public/dr-splash.html in an iframe). Click / scroll / key to enter; the iframe
-// postMessages the parent, which fades the overlay out. Shows once per session.
+// postMessages the parent, which fades the overlay out. Shows once per session,
+// and can be replayed via the house button (dr-open-splash event / #open-splash).
 ---
 <div id="dr-splash" class="dr-splash" role="dialog" aria-label="Welcome to Distributed Republic">
-  <iframe src="/dr-splash.html" title="Distributed Republic intro" loading="eager"></iframe>
+  <iframe id="dr-splash-frame" src="/dr-splash.html" title="Distributed Republic intro" loading="eager"></iframe>
   <button id="dr-splash-skip" class="dr-splash__skip" type="button">Skip intro</button>
 </div>
 
@@ -20,12 +21,12 @@
   .dr-splash__skip:hover { background: rgba(0,0,0,0.45); }
 </style>
 
-<!-- Runs before paint: if already seen this session, hide instantly (no flash) and don't lock scroll. -->
+<!-- Before paint: if seen this session (and not an explicit replay), hide instantly. -->
 <script is:inline>
   try {
-    if (sessionStorage.getItem('dr-splash-seen')) {
-      var s = document.getElementById('dr-splash');
-      if (s) s.style.display = 'none';
+    var openReq = location.hash === '#open-splash';
+    if (sessionStorage.getItem('dr-splash-seen') && !openReq) {
+      var s = document.getElementById('dr-splash'); if (s) s.style.display = 'none';
     } else {
       document.documentElement.style.overflow = 'hidden';
     }
@@ -34,16 +35,26 @@
 
 <script>
   const el = document.getElementById('dr-splash');
+  const frame = document.getElementById('dr-splash-frame') as HTMLIFrameElement | null;
+  function openSplash() {
+    if (!el || !frame) return;
+    el.dataset.done = '';
+    el.classList.remove('is-leaving');
+    el.style.display = 'block';
+    frame.src = '/dr-splash.html'; // reload so the scene + prompt restart fresh
+    document.documentElement.style.overflow = 'hidden';
+  }
   function dismiss() {
-    if (!el || el.dataset.done) return;
+    if (!el || el.dataset.done === '1') return;
     el.dataset.done = '1';
     el.classList.add('is-leaving');
     try { sessionStorage.setItem('dr-splash-seen', '1'); } catch (e) {}
     document.documentElement.style.overflow = '';
-    setTimeout(() => el.remove(), 1100);
+    setTimeout(() => { el.style.display = 'none'; if (frame) frame.src = 'about:blank'; }, 1100);
   }
-  // Already seen -> remove entirely.
-  try { if (el && sessionStorage.getItem('dr-splash-seen')) { el.remove(); } } catch (e) {}
   window.addEventListener('message', (e) => { if (e.data === 'dr-splash-enter') dismiss(); });
+  window.addEventListener('dr-open-splash', openSplash);
   document.getElementById('dr-splash-skip')?.addEventListener('click', dismiss);
+  // Explicit replay when arriving from another page's house button.
+  if (location.hash === '#open-splash') { history.replaceState(null, '', location.pathname); openSplash(); }
 </script>
