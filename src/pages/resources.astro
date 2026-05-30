@@ -1,0 +1,29 @@
+---
+import Base from '../layouts/Base.astro';
+// Resources are documents uploaded to the HubSpot file manager and linked here
+// (the bykovbrett.net /resource pattern). Placeholder list until Phase 3.
+const resources: { title: string; desc: string; href: string }[] = [
+  // { title: 'Starting a community: a primer', desc: 'A short guide to the first steps.', href: 'https://...hubspot.../primer.pdf' },
+];
+---
+<Base title="Resources — Distributed Republic">
+  <section class="container section">
+    <p class="eyebrow">Resources</p>
+    <h1>Reading, guides, and tools.</h1>
+    <p class="lead" style="max-width:66ch">Things we have found useful in thinking about community living, governance, and the commons. Downloadable guides will appear here. [Placeholder until resources are published.]</p>
+
+    <div class="grid grid-2" style="margin-top:32px">
+      {resources.length ? resources.map((r) => (
+        <a class="card" href={r.href} style="text-decoration:none;display:block">
+          <h3>{r.title}</h3>
+          <p style="margin-bottom:0">{r.desc}</p>
+        </a>
+      )) : (
+        <div class="card" style="grid-column:1/-1;text-align:center;padding:56px 28px">
+          <h3>Resources coming soon</h3>
+          <p style="margin:0 auto">We are putting together our first guides. <a href="/contact/">Ask us</a> if there is something specific you would like.</p>
+        </div>
+      )}
+    </div>
+  </section>
+</Base>

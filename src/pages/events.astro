@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+// The live events feed will embed here via an iframe served through Tailscale
+// Funnel (the Brew events public-delivery pattern), filtered to DR-tagged events.
+// Placeholder until the backend Events feature (Phase 2) is wired.
+const EVENTS_EMBED_SRC = ''; // e.g. https://<funnel-host>/events/embed?tag=dr
+---
+<Base title="Events — Distributed Republic">
+  <section class="container section">
+    <p class="eyebrow">Events</p>
+    <h1>Gatherings, visits, and conversations.</h1>
+    <p class="lead" style="max-width:66ch">Open days, shared meals, work weekends, and conversations about community living. This is where we meet in person and online. [Placeholder until the events feed is connected.]</p>
+
+    <div style="margin-top:32px">
+      {EVENTS_EMBED_SRC ? (
+        <iframe src={EVENTS_EMBED_SRC} title="Distributed Republic events" style="width:100%;min-height:680px;border:1px solid var(--line);border-radius:var(--radius)" loading="lazy"></iframe>
+      ) : (
+        <div class="card" style="text-align:center;padding:64px 28px">
+          <h3>No events listed yet</h3>
+          <p style="margin:0 auto">Our first gatherings are being planned. Check back soon, or <a href="/contact/">tell us you would like to be invited</a>.</p>
+        </div>
+      )}
+    </div>
+  </section>
+</Base>

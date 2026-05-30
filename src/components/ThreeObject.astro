@@ -1,0 +1,170 @@
+---
+// Reusable, mobile-safe three.js decorative object used INSTEAD of images.
+// Props:
+//   type    - 'nodes' (networked commons cluster, echoes the logo) | 'hearth'
+//   height  - css height of the canvas area
+//   label   - accessible label describing the object
+const { type = 'nodes', height = '420px', label = 'Animated decorative object' } = Astro.props;
+---
+
+<figure class="three-object" data-three={type} style={`--three-h:${height}`} role="img" aria-label={label}>
+  <div class="three-object__mount" aria-hidden="true"></div>
+  <!-- Static fallback for reduced-motion / no-WebGL: the logo mark -->
+  <img class="three-object__fallback" src="/dr-mark.svg" alt="" aria-hidden="true" width="120" height="120" />
+</figure>
+
+<style>
+  .three-object { position: relative; margin: 0; width: 100%; height: var(--three-h); }
+  .three-object__mount { position: absolute; inset: 0; }
+  .three-object__mount canvas { display: block; width: 100% !important; height: 100% !important; }
+  .three-object__fallback {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: 38%; max-width: 180px; height: auto; opacity: 0.92;
+  }
+  /* When the live scene is active we hide the static fallback. */
+  .three-object.is-live .three-object__fallback { display: none; }
+</style>
+
+<script>
+  import * as THREE from 'three';
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DPR = Math.min(window.devicePixelRatio || 1, 1.75);
+
+  function fib(n: number) {
+    // Fibonacci sphere — even points on a unit sphere.
+    const pts: THREE.Vector3[] = [];
+    const phi = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < n; i++) {
+      const y = 1 - (i / (n - 1)) * 2;
+      const r = Math.sqrt(1 - y * y);
+      const t = phi * i;
+      pts.push(new THREE.Vector3(Math.cos(t) * r, y, Math.sin(t) * r));
+    }
+    return pts;
+  }
+
+  function buildNodes(group: THREE.Group, isSmall: boolean) {
+    const N = isSmall ? 26 : 42;
+    const R = 1.6;
+    const pts = fib(N).map((p) => p.multiplyScalar(R));
+    const forest = new THREE.Color('#0D7555');
+    const sage = new THREE.Color('#A7D8C4');
+
+    // Nodes (members)
+    const dotGeo = new THREE.SphereGeometry(0.055, 12, 12);
+    const dotMat = new THREE.MeshBasicMaterial({ color: forest });
+    for (const p of pts) {
+      const m = new THREE.Mesh(dotGeo, dotMat);
+      m.position.copy(p);
+      group.add(m);
+    }
+    // Connections (agreements) — link near neighbours
+    const linePos: number[] = [];
+    for (let i = 0; i < pts.length; i++) {
+      const dists = pts
+        .map((q, j) => ({ j, d: pts[i].distanceTo(q) }))
+        .filter((o) => o.j !== i)
+        .sort((a, b) => a.d - b.d)
+        .slice(0, 2);
+      for (const { j } of dists) {
+        linePos.push(pts[i].x, pts[i].y, pts[i].z, pts[j].x, pts[j].y, pts[j].z);
+      }
+    }
+    const lg = new THREE.BufferGeometry();
+    lg.setAttribute('position', new THREE.Float32BufferAttribute(linePos, 3));
+    const lm = new THREE.LineBasicMaterial({ color: sage, transparent: true, opacity: 0.5 });
+    group.add(new THREE.LineSegments(lg, lm));
+    return (t: number) => { group.rotation.y = t * 0.18; group.rotation.x = Math.sin(t * 0.12) * 0.12; };
+  }
+
+  function buildHearth(group: THREE.Group) {
+    // Low-poly hearth: a glowing cone (flame) over a ring of logs.
+    const flameGeo = new THREE.ConeGeometry(0.5, 1.3, 6);
+    const flameMat = new THREE.MeshBasicMaterial({ color: '#E8A23D' });
+    const flame = new THREE.Mesh(flameGeo, flameMat);
+    flame.position.y = 0.4;
+    group.add(flame);
+    const glow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.9, 16, 16),
+      new THREE.MeshBasicMaterial({ color: '#F2C078', transparent: true, opacity: 0.16 })
+    );
+    glow.position.y = 0.4;
+    group.add(glow);
+    const logMat = new THREE.MeshBasicMaterial({ color: '#0D7555' });
+    for (let i = 0; i < 5; i++) {
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 1.4, 8), logMat);
+      log.rotation.z = Math.PI / 2;
+      log.rotation.y = (i / 5) * Math.PI;
+      log.position.y = -0.5;
+      group.add(log);
+    }
+    return (t: number) => {
+      group.rotation.y = t * 0.15;
+      const s = 1 + Math.sin(t * 3) * 0.06;
+      flame.scale.set(1, s, 1);
+      glow.scale.setScalar(1 + Math.sin(t * 2.3) * 0.05);
+    };
+  }
+
+  function init(el: HTMLElement) {
+    const mount = el.querySelector<HTMLElement>('.three-object__mount');
+    if (!mount) return;
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
+    } catch (e) {
+      return; // no WebGL — keep static fallback
+    }
+    const w = mount.clientWidth || 400;
+    const h = mount.clientHeight || 400;
+    renderer.setPixelRatio(DPR);
+    renderer.setSize(w, h, false);
+    mount.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(40, w / h, 0.1, 100);
+    camera.position.set(0, 0, 6);
+    const group = new THREE.Group();
+    scene.add(group);
+
+    const isSmall = window.matchMedia('(max-width: 700px)').matches;
+    const type = el.getAttribute('data-three');
+    const update = type === 'hearth' ? buildHearth(group) : buildNodes(group, isSmall);
+
+    el.classList.add('is-live');
+
+    function resize() {
+      const cw = mount!.clientWidth, ch = mount!.clientHeight;
+      if (!cw || !ch) return;
+      camera.aspect = cw / ch; camera.updateProjectionMatrix();
+      renderer.setSize(cw, ch, false);
+    }
+    window.addEventListener('resize', () => requestAnimationFrame(resize), { passive: true });
+
+    const clock = new THREE.Clock();
+    let raf = 0, running = false;
+    function frame() { update(clock.getElapsedTime()); renderer.render(scene, camera); raf = requestAnimationFrame(frame); }
+    function start() { if (!running) { running = true; clock.start(); raf = requestAnimationFrame(frame); } }
+    function stop() { running = false; cancelAnimationFrame(raf); }
+
+    if (reduced) {
+      // One static frame, no loop.
+      update(0.6); renderer.render(scene, camera);
+    } else {
+      const io = new IntersectionObserver((entries) => {
+        for (const en of entries) { en.isIntersecting ? start() : stop(); }
+      }, { threshold: 0.05 });
+      io.observe(el);
+      document.addEventListener('visibilitychange', () => { document.hidden ? stop() : start(); });
+    }
+  }
+
+  function boot() {
+    document.querySelectorAll<HTMLElement>('.three-object[data-three]').forEach((el) => {
+      if (!el.dataset.inited) { el.dataset.inited = '1'; init(el); }
+    });
+  }
+  if (document.readyState !== 'loading') boot();
+  else document.addEventListener('DOMContentLoaded', boot);
+</script>

@@ -1,0 +1,24 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getCollection } from 'astro:content';
+const posts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
+---
+<Base title="Blog — Distributed Republic">
+  <section class="container section">
+    <p class="eyebrow">Blog</p>
+    <h1>Notes from the commons.</h1>
+    <p class="lead" style="max-width:66ch">Thinking out loud about community living, governance, and the places we are exploring.</p>
+
+    <div class="grid" style="margin-top:32px;gap:0">
+      {posts.map((post) => (
+        <a href={`/blog/${post.id}/`} class="card" style="text-decoration:none;display:block;margin-bottom:20px">
+          <p class="eyebrow" style="margin-bottom:8px">{fmt(post.data.pubDate)}</p>
+          <h3 style="margin-bottom:8px">{post.data.title}</h3>
+          <p style="margin-bottom:0">{post.data.description}</p>
+        </a>
+      ))}
+    </div>
+  </section>
+</Base>

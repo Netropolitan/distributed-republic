@@ -1,0 +1,63 @@
+---
+import Base from '../layouts/Base.astro';
+import ThreeObject from '../components/ThreeObject.astro';
+const pillars = [
+  { t: 'Campus', d: 'Shared kitchens, workshops, gardens and gathering halls. The physical and social commons where everyday life happens together.' },
+  { t: 'Curation', d: 'Who joins, and how. The careful stewardship of people and places so a community keeps its character as it grows.' },
+  { t: 'Rituals', d: 'The recurring practices and shared culture that turn a group of people into a community.' },
+  { t: 'Contribution', d: 'What members put in. Member-owned, one-member-one-vote thinking drawn from the cooperative tradition.' },
+];
+---
+<Base title="Distributed Republic — Community living">
+  <section class="container">
+    <div class="hero">
+      <div>
+        <p class="eyebrow">Community living</p>
+        <h1>A different way of living, built together.</h1>
+        <p class="lead">Distributed Republic explores and builds networked communities under an anarchic-agreements model. We are finding the right people and the right places to live, share, and contribute.</p>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px">
+          <a class="btn btn--primary" href="/about/">Read our story</a>
+          <a class="btn btn--ghost" href="/contact/">Get involved</a>
+        </div>
+      </div>
+      <ThreeObject type="nodes" height="440px" label="A slowly rotating cluster of connected nodes representing networked communities" />
+    </div>
+  </section>
+
+  <section class="section section--cream2">
+    <div class="container">
+      <p class="eyebrow">The framework</p>
+      <h2>Four pillars of community</h2>
+      <p style="margin-bottom:36px">Everything we build rests on four ideas. They shape how we choose places, welcome people, and live day to day.</p>
+      <div class="grid grid-2">
+        {pillars.map((p) => (
+          <div class="card">
+            <h3>{p.t}</h3>
+            <p style="margin-bottom:0">{p.d}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--forest">
+    <div class="container hero" style="padding-top:0;padding-bottom:0">
+      <ThreeObject type="hearth" height="360px" label="A gently glowing hearth representing the shared commons" />
+      <div>
+        <p class="eyebrow">The commons</p>
+        <h2>Gather around a shared fire.</h2>
+        <p>The commons is the heart of it: shared spaces, shared work, and the agreements we make with one another. Not rules handed down, but a constitution we write together.</p>
+        <a class="btn btn--ghost" href="/about/">How it works</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container" style="text-align:center">
+      <p class="eyebrow">Exploration phase</p>
+      <h2>We are looking for people and places.</h2>
+      <p style="margin:0 auto 24px">Co-founders, residents, collaborators, land, buildings, and existing communities to join. If any of this resonates, we would love to hear from you.</p>
+      <a class="btn btn--primary" href="/contact/">Start a conversation</a>
+    </div>
+  </section>
+</Base>

@@ -1,0 +1,84 @@
+---
+import '../styles/theme.css';
+const { title = 'Distributed Republic', description = 'Building technologically advanced, networked communities for a different way of living.' } = Astro.props;
+const nav = [
+  { href: '/', label: 'Home' },
+  { href: '/about/', label: 'About' },
+  { href: '/events/', label: 'Events' },
+  { href: '/blog/', label: 'Blog' },
+  { href: '/resources/', label: 'Resources' },
+  { href: '/contact/', label: 'Contact' },
+];
+---
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+  <meta name="description" content={description} />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="alternate icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/axs/axs-widget.css" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="/" aria-label="Distributed Republic home">
+        <img src="/dr-mark.svg" alt="" width="34" height="34" />
+        <b>Distributed Republic</b>
+      </a>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
+      <nav class="nav-links" aria-label="Primary">
+        {nav.map((n) => <a href={n.href}>{n.label}</a>)}
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <slot />
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="foot-grid">
+        <div>
+          <a class="brand" href="/" style="margin-bottom:14px">
+            <img src="/dr-mark.svg" alt="" width="30" height="30" style="filter:brightness(0) invert(1)" />
+            <b style="color:var(--cream)">Distributed Republic</b>
+          </a>
+          <p style="color:var(--sage-soft);max-width:42ch">Networked communities under an anarchic-agreements model. Campus, Curation, Rituals, Contribution.</p>
+        </div>
+        <div>
+          <h3 style="color:var(--cream);font-size:18px">Explore</h3>
+          {nav.slice(1).map((n) => <div style="margin:6px 0"><a href={n.href}>{n.label}</a></div>)}
+        </div>
+        <div>
+          <h3 style="color:var(--cream);font-size:18px">Get involved</h3>
+          <div style="margin:6px 0"><a href="/contact/">Contact us</a></div>
+          <div style="margin:6px 0"><a href="/events/">Upcoming events</a></div>
+        </div>
+      </div>
+      <div class="foot-bottom">© 2026 Distributed Republic. Community living.</div>
+    </div>
+  </footer>
+
+  <script src="/axs/axs-widget.js" defer></script>
+  <script>
+    const t = document.querySelector('.nav-toggle');
+    const links = document.querySelector('.nav-links');
+    t?.addEventListener('click', () => {
+      const open = links?.classList.toggle('open');
+      t.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  </script>
+</body>
+</html>
