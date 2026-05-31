@@ -131,6 +131,12 @@ a { color: var(--deep); text-underline-offset: 3px; }
   .nav-links.open { display: flex; flex-direction: column; position: absolute; top: 64px; left: 0; right: 0; background: var(--cream); padding: 18px var(--gutter); border-bottom: 1px solid var(--line); gap: 16px; }
 }
 
+/* Mobile: text sits 5px from the edge. (Three.js objects bleed full-width to
+   the viewport edge via the scoped rule in ThreeObject.astro.) */
+@media (max-width: 768px) {
+  :root { --gutter: 5px; }
+}
+
 /* Hide the floating accessibility FAB while the entry splash is showing;
    it returns once the visitor enters the site. */
 html.dr-splash-active #axs-widget-root .axs-fab-stack { display: none !important; }

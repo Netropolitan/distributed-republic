@@ -21,6 +21,15 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     width: 38%; max-width: 180px; height: auto; opacity: 0.92;
   }
   .three-object.is-live .three-object__fallback { display: none; }
+  /* Mobile: bleed full-width to the viewport edge (0 padding), cancelling the
+     container's 5px gutter. Scoped here so it outspecifies the width rule above. */
+  @media (max-width: 768px) {
+    .three-object {
+      width: calc(100% + (var(--gutter) * 2));
+      max-width: none;
+      margin-inline: calc(var(--gutter) * -1);
+    }
+  }
 </style>
 
 <script>
