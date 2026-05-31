@@ -203,6 +203,33 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { group.rotation.y = t * 0.12; }, camera: { pos: [0, 1.6, 5.0] as const, look: [0, 0.3, 0] as const } };
   }
 
+  // Beehive (straw skep) — the historic symbol of the cooperative movement, with drifting bees.
+  function buildBeehive(group: THREE.Group) {
+    const profile = [[0.0, 0], [0.96, 0.0], [0.93, 0.22], [0.85, 0.45], [0.72, 0.68], [0.52, 0.9], [0.28, 1.08], [0.0, 1.18]]
+      .map(([x, y]) => new THREE.Vector2(x, y));
+    group.add(new THREE.Mesh(new THREE.LatheGeometry(profile, 18), std('#D9A441')));
+    const coilMat = std('#BE812B');
+    for (const [r, y] of [[0.92, 0.12], [0.82, 0.34], [0.66, 0.58], [0.45, 0.82], [0.22, 1.0]]) {
+      const t = new THREE.Mesh(new THREE.TorusGeometry(r, 0.035, 8, 22), coilMat);
+      t.rotation.x = Math.PI / 2; t.position.y = y; group.add(t);
+    }
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.16), std('#3A2A14')); door.position.set(0, 0.16, 0.95); group.add(door);
+    const bees: { m: THREE.Mesh; r: number; a: number; y: number; sp: number }[] = [];
+    for (let i = 0; i < 3; i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: '#3A2A14' }));
+      group.add(m);
+      bees.push({ m, r: 1.15 + Math.random() * 0.45, a: Math.random() * 6.28, y: 0.4 + Math.random() * 0.7, sp: 0.8 + Math.random() * 0.6 });
+    }
+    group.position.y = -0.55;
+    return {
+      update: (t: number) => {
+        group.rotation.y = t * 0.1;
+        bees.forEach((o) => { o.m.position.set(Math.cos(o.a + t * o.sp) * o.r, o.y + Math.sin(t * o.sp * 1.7 + o.a) * 0.12, Math.sin(o.a + t * o.sp) * o.r); });
+      },
+      camera: { pos: [0, 1.0, 4.4] as const, look: [0, 0.45, 0] as const },
+    };
+  }
+
   function buildNodes(group: THREE.Group, small: boolean) {
     const N = small ? 26 : 42, R = 1.6;
     const phi = Math.PI * (3 - Math.sqrt(5));
@@ -241,7 +268,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const type = el.getAttribute('data-three');
     const builders: Record<string, () => any> = {
       ring: () => buildRing(group, small), tree: () => buildTree(group), village: () => buildVillage(group, small),
-      network: () => buildNetwork(group, small), hall: () => buildHall(group),
+      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group),
       nodes: () => buildNodes(group, small), hearth: () => buildHearth(group),
     };
     const built = (builders[type || 'ring'] || builders.ring)();
