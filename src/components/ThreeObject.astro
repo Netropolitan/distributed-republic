@@ -267,6 +267,31 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { group.rotation.y = Math.sin(t * 0.18) * 0.22; }, camera: { pos: [0, 1.05, 4.2] as const, look: [0, 0.15, 0] as const } };
   }
 
+  // Watermill: a mill house beside a turning water wheel dipping into a pool.
+  function buildWatermill(group: THREE.Group) {
+    const base = new THREE.Mesh(new THREE.CircleGeometry(1.75, 28), std(GRASS)); base.rotation.x = -Math.PI / 2; group.add(base);
+    const water = new THREE.Mesh(new THREE.CircleGeometry(0.85, 24), std('#4E7E8C')); water.rotation.x = -Math.PI / 2; water.position.set(-0.45, 0.02, 0.35); group.add(water);
+    // mill house on the bank
+    const mill = makeCabin(); mill.scale.setScalar(1.1); mill.position.set(0.7, 0, -0.3); mill.rotation.y = -0.35; group.add(mill);
+    // water wheel: faces the camera (axle along Z), spins around it
+    const wheel = new THREE.Group(); wheel.position.set(-0.5, 0.58, 0.35);
+    const wood = std(BARK), plank = std('#9C7B52');
+    wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.055, 8, 26), wood));
+    wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.045, 8, 26), wood));
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.42, 10), wood); hub.rotation.x = Math.PI / 2; wheel.add(hub);
+    const N = 8;
+    for (let i = 0; i < N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.045, 0.64, 0.045), wood);
+      spoke.position.set(Math.cos(a) * 0.3, Math.sin(a) * 0.3, 0); spoke.rotation.z = a - Math.PI / 2; wheel.add(spoke);
+      const pad = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.34), plank);
+      pad.position.set(Math.cos(a) * 0.62, Math.sin(a) * 0.62, 0); pad.rotation.z = a; wheel.add(pad);
+    }
+    group.add(wheel);
+    group.position.y = -0.4;
+    return { update: (t: number) => { wheel.rotation.z = -t * 0.6; }, camera: { pos: [0, 0.8, 4.2] as const, look: [0, 0.18, 0] as const } };
+  }
+
   function buildNodes(group: THREE.Group, small: boolean) {
     const N = small ? 26 : 42, R = 1.6;
     const phi = Math.PI * (3 - Math.sqrt(5));
@@ -305,7 +330,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const type = el.getAttribute('data-three');
     const builders: Record<string, () => any> = {
       ring: () => buildRing(group, small), tree: () => buildTree(group), village: () => buildVillage(group, small),
-      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group), signpost: () => buildSignpost(group),
+      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group), signpost: () => buildSignpost(group), watermill: () => buildWatermill(group),
       nodes: () => buildNodes(group, small), hearth: () => buildHearth(group),
     };
     const built = (builders[type || 'ring'] || builders.ring)();
