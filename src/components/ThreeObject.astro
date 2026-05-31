@@ -87,6 +87,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const wingMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0.5, side: THREE.DoubleSide });
     const w1 = new THREE.Mesh(new THREE.CircleGeometry(0.07, 8), wingMat); w1.scale.set(1, 0.45, 1); w1.position.set(0.055, 0.05, 0); w1.rotation.z = 0.6; g.add(w1);
     const w2 = new THREE.Mesh(new THREE.CircleGeometry(0.07, 8), wingMat); w2.scale.set(1, 0.45, 1); w2.position.set(-0.055, 0.05, 0); w2.rotation.z = -0.6; g.add(w2);
+    g.scale.setScalar(0.5);
     return g;
   }
   // A flattened tube along a Catmull-Rom curve = a curvy path hugging the ground.
@@ -244,6 +245,28 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     };
   }
 
+  // Signpost at a fork in the path — "choose your way", the start of a journey.
+  function buildSignpost(group: THREE.Group) {
+    const base = new THREE.Mesh(new THREE.CircleGeometry(1.6, 26), std(GRASS)); base.rotation.x = -Math.PI / 2; group.add(base);
+    const fork = new THREE.Vector3(0, 0, 0.25);
+    group.add(pathRibbon([new THREE.Vector3(0, 0, 1.45), fork], '#CBB68C'));
+    group.add(pathRibbon([fork, new THREE.Vector3(-1.2, 0, -1.05)], '#CBB68C'));
+    group.add(pathRibbon([fork, new THREE.Vector3(1.2, 0, -1.05)], '#CBB68C'));
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.075, 1.4, 8), std(BARK)); post.position.set(0, 0.7, 0.25); group.add(post);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(0.085, 8, 8), std(BARK)); cap.position.set(0, 1.42, 0.25); group.add(cap);
+    // two fingerboards at different heights pointing different ways
+    const board = (y: number, ang: number) => {
+      const arm = new THREE.Group(); arm.position.set(0, y, 0.25); arm.rotation.y = ang;
+      const b = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.15, 0.05), std('#9C7B52')); b.position.x = 0.34; arm.add(b);
+      const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.05, 3), std('#9C7B52')); tip.rotation.x = Math.PI / 2; tip.rotation.y = Math.PI; tip.position.set(0.69, 0, 0); arm.add(tip);
+      group.add(arm);
+    };
+    board(1.18, 2.3);
+    board(0.96, -0.5);
+    group.position.y = -0.55;
+    return { update: (t: number) => { group.rotation.y = -0.45 + Math.sin(t * 0.16) * 0.4; }, camera: { pos: [0, 1.05, 4.2] as const, look: [0, 0.15, 0] as const } };
+  }
+
   function buildNodes(group: THREE.Group, small: boolean) {
     const N = small ? 26 : 42, R = 1.6;
     const phi = Math.PI * (3 - Math.sqrt(5));
@@ -282,7 +305,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const type = el.getAttribute('data-three');
     const builders: Record<string, () => any> = {
       ring: () => buildRing(group, small), tree: () => buildTree(group), village: () => buildVillage(group, small),
-      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group),
+      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group), signpost: () => buildSignpost(group),
       nodes: () => buildNodes(group, small), hearth: () => buildHearth(group),
     };
     const built = (builders[type || 'ring'] || builders.ring)();
