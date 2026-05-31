@@ -269,11 +269,14 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
 
   // Watermill: a mill house beside a turning water wheel dipping into a pool.
   function buildWatermill(group: THREE.Group) {
-    const water = new THREE.Mesh(new THREE.CircleGeometry(0.8, 24), std('#4E7E8C')); water.rotation.x = -Math.PI / 2; water.position.set(0.0, 0.02, 0.22); group.add(water);
-    // mill house, with the wheel mounted on its left side
-    const mill = makeCabin(); mill.scale.setScalar(1.4); mill.position.set(0.6, 0, -0.1); group.add(mill);
-    // water wheel: faces the camera (axle along Z), spins around it
-    const wheel = new THREE.Group(); wheel.position.set(0.0, 0.56, 0.2); wheel.scale.setScalar(0.9);
+    const water = new THREE.Mesh(new THREE.CircleGeometry(0.78, 24), std('#4E7E8C')); water.rotation.x = -Math.PI / 2; water.position.set(0, 0.02, 0.12); group.add(water);
+    // plain mill house (no door/windows); wall top sits above the wheel's top
+    const mill = new THREE.Group();
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.25, 1.0), std(CREAM)); wall.position.y = 0.625; mill.add(wall);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(1.0, 0.62, 4), std(ROOF)); roof.rotation.y = Math.PI / 4; roof.scale.set(1.16, 1, 0.8); roof.position.y = 1.56; mill.add(roof);
+    mill.position.set(0, 0, -0.4); group.add(mill);
+    // water wheel centred on the wall, faces the camera (axle along Z), spins
+    const wheel = new THREE.Group(); wheel.position.set(0, 0.55, 0.12); wheel.scale.setScalar(0.85);
     const wood = std(BARK), plank = std('#9C7B52');
     wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.62, 0.055, 8, 26), wood));
     wheel.add(new THREE.Mesh(new THREE.TorusGeometry(0.44, 0.045, 8, 26), wood));
@@ -288,9 +291,9 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     }
     group.add(wheel);
     // axle linking the wheel hub into the mill wall
-    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7, 8), std(BARK)); axle.rotation.x = Math.PI / 2; axle.position.set(0.08, 0.56, -0.12); group.add(axle);
-    group.position.y = -0.35;
-    return { update: (t: number) => { wheel.rotation.z = -t * 0.6; }, camera: { pos: [0.2, 0.85, 4.2] as const, look: [0.2, 0.2, 0] as const } };
+    const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7, 8), std(BARK)); axle.rotation.x = Math.PI / 2; axle.position.set(0, 0.55, -0.1); group.add(axle);
+    group.position.y = -0.55;
+    return { update: (t: number) => { wheel.rotation.z = -t * 0.6; }, camera: { pos: [0, 1.1, 5.0] as const, look: [0, 0.4, 0] as const } };
   }
 
   function buildNodes(group: THREE.Group, small: boolean) {
