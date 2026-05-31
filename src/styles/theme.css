@@ -64,6 +64,7 @@ a { color: var(--deep); text-underline-offset: 3px; }
   text-transform: uppercase;
   color: var(--decorative);
   margin: 0 0 14px;
+  max-width: none; /* drop the body 64ch cap so eyebrows centre in centered sections */
 }
 
 .container { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
