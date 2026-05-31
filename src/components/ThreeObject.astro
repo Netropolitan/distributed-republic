@@ -316,6 +316,44 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { group.rotation.y = Math.sin(t * 0.12) * 0.1; }, camera: { pos: [0, 1.5, 4.7] as const, look: [0, 0.25, 0] as const } };
   }
 
+  // Arched footbridge over a pond — calm, "crossing over".
+  function buildBridge(group: THREE.Group) {
+    const water = new THREE.Mesh(new THREE.CircleGeometry(1.7, 30), std('#4E7E8C')); water.rotation.x = -Math.PI / 2; group.add(water);
+    const bank = (x: number) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), std('#37805F')); m.scale.set(1.0, 0.4, 1.4); m.position.set(x, 0, 0); group.add(m); };
+    bank(-1.5); bank(1.5);
+    const arc = [[-1.45, 0.04, 0], [-0.75, 0.42, 0], [0, 0.62, 0], [0.75, 0.42, 0], [1.45, 0.04, 0]].map((p) => new THREE.Vector3(p[0], p[1], p[2]));
+    const curve = new THREE.CatmullRomCurve3(arc);
+    const wood = std('#9C7B52');
+    // deck planks following the arch
+    const N = 15;
+    for (let i = 0; i <= N; i++) {
+      const u = i / N, pt = curve.getPointAt(u), tan = curve.getTangentAt(u);
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.06, 0.52), wood);
+      plank.position.copy(pt); plank.rotation.z = Math.atan2(tan.y, tan.x); group.add(plank);
+    }
+    // railings + posts
+    for (const z of [0.25, -0.25]) {
+      const rail = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arc.map((v) => new THREE.Vector3(v.x, v.y + 0.24, z))), 40, 0.025, 6, false), std(BARK));
+      group.add(rail);
+    }
+    for (const u of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+      const pt = curve.getPointAt(u);
+      for (const z of [0.25, -0.25]) { const post = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, 0.26, 6), std(BARK)); post.position.set(pt.x, pt.y + 0.12, z); group.add(post); }
+    }
+    // a few drifting lily pads
+    const pads: { p: THREE.Mesh; base: number; sp: number }[] = [];
+    for (let i = 0; i < 3; i++) {
+      const pad = new THREE.Mesh(new THREE.CircleGeometry(0.14, 10), std('#3E7D5F')); pad.rotation.x = -Math.PI / 2;
+      pad.position.set(-0.8 + i * 0.8, 0.03, i % 2 ? 0.8 : -0.75); group.add(pad);
+      pads.push({ p: pad, base: pad.position.x, sp: 0.07 + i * 0.02 });
+    }
+    group.position.y = -0.35;
+    return {
+      update: (t: number) => { group.rotation.y = Math.sin(t * 0.12) * 0.12; pads.forEach((o, i) => { o.p.position.x = o.base + Math.sin(t * o.sp + i) * 0.14; }); },
+      camera: { pos: [0, 1.15, 4.7] as const, look: [0, 0.22, 0] as const },
+    };
+  }
+
   function buildNodes(group: THREE.Group, small: boolean) {
     const N = small ? 26 : 42, R = 1.6;
     const phi = Math.PI * (3 - Math.sqrt(5));
@@ -354,7 +392,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const type = el.getAttribute('data-three');
     const builders: Record<string, () => any> = {
       ring: () => buildRing(group, small), tree: () => buildTree(group), village: () => buildVillage(group, small),
-      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group), signpost: () => buildSignpost(group), watermill: () => buildWatermill(group), path: () => buildPath(group),
+      network: () => buildNetwork(group, small), hall: () => buildHall(group), beehive: () => buildBeehive(group), signpost: () => buildSignpost(group), watermill: () => buildWatermill(group), path: () => buildPath(group), bridge: () => buildBridge(group),
       nodes: () => buildNodes(group, small), hearth: () => buildHearth(group),
     };
     const built = (builders[type || 'ring'] || builders.ring)();
