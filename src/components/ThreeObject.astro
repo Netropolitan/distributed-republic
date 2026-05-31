@@ -78,6 +78,17 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     g.add(wall, roof, door, w1, w2);
     return g;
   }
+  // Low-poly bee: amber body with dark stripe bands, a dark head and two pale wings. Faces +z.
+  function makeBee() {
+    const g = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8), std('#E8A23D')); body.scale.set(1, 0.85, 1.35); g.add(body);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 8), std('#2A2018')); head.position.z = 0.1; g.add(head);
+    for (const z of [0.0, -0.05]) { const band = new THREE.Mesh(new THREE.TorusGeometry(0.066, 0.018, 6, 14), std('#2A2018')); band.position.z = z; g.add(band); }
+    const wingMat = new THREE.MeshBasicMaterial({ color: '#FFFFFF', transparent: true, opacity: 0.5, side: THREE.DoubleSide });
+    const w1 = new THREE.Mesh(new THREE.CircleGeometry(0.07, 8), wingMat); w1.scale.set(1, 0.45, 1); w1.position.set(0.055, 0.05, 0); w1.rotation.z = 0.6; g.add(w1);
+    const w2 = new THREE.Mesh(new THREE.CircleGeometry(0.07, 8), wingMat); w2.scale.set(1, 0.45, 1); w2.position.set(-0.055, 0.05, 0); w2.rotation.z = -0.6; g.add(w2);
+    return g;
+  }
   // A flattened tube along a Catmull-Rom curve = a curvy path hugging the ground.
   function pathRibbon(pts: THREE.Vector3[], color: string) {
     const curve = new THREE.CatmullRomCurve3(pts);
@@ -214,17 +225,20 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
       t.rotation.x = Math.PI / 2; t.position.y = y; group.add(t);
     }
     const door = new THREE.Mesh(new THREE.PlaneGeometry(0.22, 0.16), std('#3A2A14')); door.position.set(0, 0.16, 0.95); group.add(door);
-    const bees: { m: THREE.Mesh; r: number; a: number; y: number; sp: number }[] = [];
+    const bees: { m: THREE.Group; r: number; a: number; y: number; sp: number }[] = [];
     for (let i = 0; i < 3; i++) {
-      const m = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 8), new THREE.MeshBasicMaterial({ color: '#3A2A14' }));
-      group.add(m);
+      const m = makeBee(); group.add(m);
       bees.push({ m, r: 1.15 + Math.random() * 0.45, a: Math.random() * 6.28, y: 0.4 + Math.random() * 0.7, sp: 0.8 + Math.random() * 0.6 });
     }
     group.position.y = -0.55;
     return {
       update: (t: number) => {
         group.rotation.y = t * 0.1;
-        bees.forEach((o) => { o.m.position.set(Math.cos(o.a + t * o.sp) * o.r, o.y + Math.sin(t * o.sp * 1.7 + o.a) * 0.12, Math.sin(o.a + t * o.sp) * o.r); });
+        bees.forEach((o) => {
+          const ang = o.a + t * o.sp;
+          o.m.position.set(Math.cos(ang) * o.r, o.y + Math.sin(t * o.sp * 1.7 + o.a) * 0.12, Math.sin(ang) * o.r);
+          o.m.rotation.y = -ang;
+        });
       },
       camera: { pos: [0, 1.0, 4.4] as const, look: [0, 0.45, 0] as const },
     };
