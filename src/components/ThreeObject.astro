@@ -198,7 +198,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { group.rotation.y = t * 0.1; }, camera: { pos: [0, 3.4, 4.9] as const, look: [0, -0.15, 0] as const } };
   }
 
-  // Communal gathering hall (roundhouse) — the shared/cooperative space.
+  // Communal gathering hall (roundhouse), the shared/cooperative space.
   function buildHall(group: THREE.Group) {
     const base = new THREE.Mesh(new THREE.CircleGeometry(1.7, 28), std(GRASS)); base.rotation.x = -Math.PI / 2; group.add(base);
     const body = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.98, 0.7, 12), std(CREAM)); body.position.y = 0.35; group.add(body);
@@ -215,7 +215,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { group.rotation.y = t * 0.12; }, camera: { pos: [0, 1.6, 5.0] as const, look: [0, 0.3, 0] as const } };
   }
 
-  // Beehive (straw skep) — the historic symbol of the cooperative movement, with drifting bees.
+  // Beehive (straw skep), the historic symbol of the cooperative movement, with drifting bees.
   function buildBeehive(group: THREE.Group) {
     const profile = [[0.0, 0], [0.96, 0.0], [0.93, 0.22], [0.85, 0.45], [0.72, 0.68], [0.52, 0.9], [0.28, 1.08], [0.0, 1.18]]
       .map(([x, y]) => new THREE.Vector2(x, y));
@@ -245,7 +245,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     };
   }
 
-  // Signpost at a fork in the path — "choose your way", the start of a journey.
+  // Signpost at a fork in the path, "choose your way", the start of a journey.
   function buildSignpost(group: THREE.Group) {
     const base = new THREE.Mesh(new THREE.CircleGeometry(1.6, 26), std(GRASS)); base.rotation.x = -Math.PI / 2; group.add(base);
     const O = new THREE.Vector3(0, 0, 0); // fork + post on the rotation axis so it stays upright
@@ -296,7 +296,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { wheel.rotation.z = -t * 0.6; }, camera: { pos: [0, 1.1, 5.0] as const, look: [0, 0.4, 0] as const } };
   }
 
-  // Winding path through rolling hills — calm, hopeful, "the journey".
+  // Winding path through rolling hills, calm, hopeful, "the journey".
   function buildPath(group: THREE.Group) {
     const ground = new THREE.Mesh(new THREE.CircleGeometry(1.9, 30), std('#3E7D5F')); ground.rotation.x = -Math.PI / 2; group.add(ground);
     const dome = (x: number, z: number, sx: number, sy: number, sz: number, c: string) => {
@@ -316,7 +316,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     return { update: (t: number) => { group.rotation.y = Math.sin(t * 0.12) * 0.1; }, camera: { pos: [0, 1.5, 4.7] as const, look: [0, 0.25, 0] as const } };
   }
 
-  // Arched footbridge over a pond — calm, "crossing over".
+  // Arched footbridge over a pond, calm, "crossing over".
   function buildBridge(group: THREE.Group) {
     const water = new THREE.Mesh(new THREE.CircleGeometry(1.7, 30), std('#3E7CB8')); water.rotation.x = -Math.PI / 2; group.add(water);
     const bank = (x: number) => { const m = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), std('#37805F')); m.scale.set(1.0, 0.4, 1.4); m.position.set(x, 0, 0); group.add(m); };
