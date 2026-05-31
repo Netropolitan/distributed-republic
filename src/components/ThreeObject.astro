@@ -165,6 +165,44 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     };
   }
 
+  // Distributed network: several small settlements linked by paths = a network of communities.
+  function buildNetwork(group: THREE.Group, small: boolean) {
+    const n = small ? 3 : 4, R = 1.55;
+    const centers: THREE.Vector3[] = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2 + 0.5;
+      const cx = Math.cos(a) * R, cz = Math.sin(a) * R;
+      centers.push(new THREE.Vector3(cx, 0, cz));
+      const s = new THREE.Group(); s.position.set(cx, 0, cz);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(0.55, 22), std(GRASS)); disc.rotation.x = -Math.PI / 2; s.add(disc);
+      const cab = makeCabin(); cab.scale.setScalar(0.4); cab.position.set(-0.1, 0, 0.06); cab.rotation.y = -a + Math.PI; s.add(cab);
+      const tr = makeTree(0.32); tr.position.set(0.22, 0, -0.12); s.add(tr);
+      group.add(s);
+    }
+    for (let i = 0; i < centers.length; i++)
+      for (let j = i + 1; j < centers.length; j++)
+        group.add(pathRibbon([centers[i].clone(), centers[j].clone()], '#CBB68C'));
+    group.position.y = -0.4;
+    return { update: (t: number) => { group.rotation.y = t * 0.1; }, camera: { pos: [0, 3.4, 4.9] as const, look: [0, -0.15, 0] as const } };
+  }
+
+  // Communal gathering hall (roundhouse) — the shared/cooperative space.
+  function buildHall(group: THREE.Group) {
+    const base = new THREE.Mesh(new THREE.CircleGeometry(1.7, 28), std(GRASS)); base.rotation.x = -Math.PI / 2; group.add(base);
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.92, 0.98, 0.7, 12), std(CREAM)); body.position.y = 0.35; group.add(body);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.75, 12), std(ROOF)); roof.position.y = 1.05; group.add(roof);
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(0.24, 0.44), std('#5C3A2E')); door.position.set(0.95, 0.22, 0); door.lookAt(3, 0.22, 0); group.add(door);
+    const winMat = new THREE.MeshBasicMaterial({ color: GLOW });
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI * 2 + 0.5;
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.16, 0.18), winMat);
+      w.position.set(Math.cos(a) * 0.94, 0.4, Math.sin(a) * 0.94); w.lookAt(Math.cos(a) * 3, 0.4, Math.sin(a) * 3);
+      group.add(w);
+    }
+    group.position.y = -0.55;
+    return { update: (t: number) => { group.rotation.y = t * 0.12; }, camera: { pos: [0, 1.6, 5.0] as const, look: [0, 0.3, 0] as const } };
+  }
+
   function buildNodes(group: THREE.Group, small: boolean) {
     const N = small ? 26 : 42, R = 1.6;
     const phi = Math.PI * (3 - Math.sqrt(5));
@@ -203,6 +241,7 @@ const { type = 'ring', height = '440px', label = 'Animated decorative object' } 
     const type = el.getAttribute('data-three');
     const builders: Record<string, () => any> = {
       ring: () => buildRing(group, small), tree: () => buildTree(group), village: () => buildVillage(group, small),
+      network: () => buildNetwork(group, small), hall: () => buildHall(group),
       nodes: () => buildNodes(group, small), hearth: () => buildHearth(group),
     };
     const built = (builders[type || 'ring'] || builders.ring)();
