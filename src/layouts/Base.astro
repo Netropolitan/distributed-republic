@@ -11,11 +11,11 @@ const {
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL('/og.png', Astro.site).href;
 const nav = [
+  { href: '/', label: 'Home' },
   { href: '/about/', label: 'About' },
   { href: '/events/', label: 'Events' },
   { href: '/blog/', label: 'Blog' },
   { href: '/resources/', label: 'Resources' },
-  { href: '/#follow', label: 'Follow' },
   { href: '/contact/', label: 'Contact' },
 ];
 ---
