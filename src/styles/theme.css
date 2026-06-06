@@ -176,11 +176,12 @@ main.page { padding-top: 70px; }
 .dr-signup__btn:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--forest-dark); }
 
 /* ---------- signup CTA band + footer ---------- */
-.cta-band { background: var(--cream-2); border-top: 2px solid var(--forest-dark); }
+/* position + z-index so the homepage's fixed canvas can never paint over them */
+.cta-band { background: var(--cream-2); border-top: 2px solid var(--forest-dark); position: relative; z-index: 10; }
 .cta-band .inner { max-width: 640px; margin: 0 auto; text-align: center; padding: clamp(50px, 8vh, 80px) var(--gutter); }
 .cta-band p { margin-left: auto; margin-right: auto; }
 
-.site-footer { background: var(--forest-dark); color: var(--sage-soft); padding: 46px 0 36px; font-size: 14.5px; }
+.site-footer { background: var(--forest-dark); color: var(--sage-soft); padding: 46px 0 36px; font-size: 14.5px; position: relative; z-index: 10; }
 .site-footer a { color: var(--sage); text-decoration: none; }
 .site-footer a:hover { color: var(--cream); }
 .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 30px; }
