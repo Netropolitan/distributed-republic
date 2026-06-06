@@ -1,16 +1,21 @@
 ---
 import '../styles/theme.css';
 import EmailSignup from '../components/EmailSignup.astro';
-const { title = 'Distributed Republic', description = 'Building technologically advanced, networked communities for a different way of living.', noindex = false, hideSignupCta = false } = Astro.props;
+const {
+  title = 'Distributed Republic',
+  description = 'Building technologically advanced, networked communities for a different way of living.',
+  noindex = false,
+  hideSignupCta = false,
+  home = false, // homepage manages its own spacing (full-viewport tour stages)
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 const ogImage = new URL('/og.png', Astro.site).href;
 const nav = [
-  { href: '/', label: 'Home' },
   { href: '/about/', label: 'About' },
   { href: '/events/', label: 'Events' },
   { href: '/blog/', label: 'Blog' },
   { href: '/resources/', label: 'Resources' },
-  { href: '/contact/', label: 'Contact' },
+  { href: '/#follow', label: 'Follow' },
 ];
 ---
 <!DOCTYPE html>
@@ -39,14 +44,14 @@ const nav = [
   <meta name="twitter:image" content={ogImage} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400;0,500;0,600;0,700;0,800&family=Spline+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/axs/axs-widget.css" />
 </head>
 <body>
   <header class="site-header">
-    <div class="container nav">
+    <div class="nav">
       <a class="brand" href="/" aria-label="Distributed Republic home">
-        <img src="/dr-mark.svg" alt="" width="34" height="34" />
+        <img src="/dr-mark.svg" alt="" width="32" height="32" />
         <b>Distributed Republic</b>
       </a>
       <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false">&#9776;</button>
@@ -56,16 +61,17 @@ const nav = [
     </div>
   </header>
 
-  <main id="main">
+  <main id="main" class={home ? '' : 'page'}>
     <slot />
   </main>
 
   {!hideSignupCta && (
-    <section class="section section--forest" aria-label="Keep up to date">
-      <div class="container" style="max-width:600px;text-align:center">
-        <h2>Keep up to date</h2>
-        <p style="margin:0 auto 28px">Occasional notes on the project as it takes shape. No names, just your email.</p>
-        <EmailSignup tone="dark" heading="" blurb="" />
+    <section class="cta-band" aria-label="Keep up to date">
+      <div class="inner">
+        <span class="step-tag">A journey, not a sign-up</span>
+        <h2>Follow along</h2>
+        <p style="margin-bottom:24px">Occasional notes on the project as it takes shape. No names, just your email.</p>
+        <EmailSignup tone="light" heading="" blurb="" />
       </div>
     </section>
   )}
@@ -78,51 +84,47 @@ const nav = [
             <img src="/dr-mark.svg" alt="" width="30" height="30" style="filter:brightness(0) invert(1)" />
             <b style="color:var(--cream)">Distributed Republic</b>
           </a>
-          <p style="color:var(--sage-soft);max-width:42ch">Networked communities under an anarchic-agreements model. Campus, Curation, Rituals, Contribution.</p>
+          <p style="max-width:42ch">Networked communities under an anarchic-agreements model. Campus, Curation, Rituals, Contribution.</p>
         </div>
         <div>
-          <h3 style="color:var(--cream);font-size:18px">Explore</h3>
-          {nav.slice(1).map((n) => <div style="margin:6px 0"><a href={n.href}>{n.label}</a></div>)}
+          <h3>Explore</h3>
+          <div style="margin:6px 0"><a href="/about/">About</a></div>
+          <div style="margin:6px 0"><a href="/events/">Events</a></div>
+          <div style="margin:6px 0"><a href="/blog/">Blog</a></div>
+          <div style="margin:6px 0"><a href="/resources/">Resources</a></div>
         </div>
         <div>
-          <h3 style="color:var(--cream);font-size:18px">Get involved</h3>
+          <h3>Get involved</h3>
+          <div style="margin:6px 0"><a href="/#follow">Follow along</a></div>
           <div style="margin:6px 0"><a href="/contact/">Contact us</a></div>
-          <div style="margin:6px 0"><a href="/events/">Upcoming events</a></div>
         </div>
       </div>
-      <div class="foot-bottom">© 2026 Distributed Republic. Community living.</div>
+      <div class="foot-bottom">© 2026 Distributed Republic · Community living</div>
     </div>
   </footer>
 
-  <!-- Replay the entry splash. On home, reopens it; elsewhere, navigates home and opens. -->
-  <button id="dr-splash-btn" class="dr-splash-btn" type="button" aria-label="Replay the intro" title="Replay the intro">
-    <svg viewBox="0 0 24 24" fill="#FAF8F4" fill-rule="evenodd" aria-hidden="true">
-      <path d="M12 3l9 8h-2v9H5v-9H3l9-8z M10.4 13v6h3.2v-6h-3.2z" />
-    </svg>
-  </button>
-  <style>
-    .dr-splash-btn {
-      position: fixed; right: 20px; bottom: 88px; z-index: 99999;
-      width: 52px; height: 52px; border-radius: 16px; border: 0;
-      background: #065F46; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.18); transition: background .15s ease, transform .15s ease;
-    }
-    html.dr-splash-active .dr-splash-btn { display: none; }
-    /* Match the accessibility FAB, which moves to right:16px/bottom:16px on mobile. */
-    @media (max-width: 768px) {
-      .dr-splash-btn { right: 16px; bottom: 76px; width: 48px; height: 48px; border-radius: 14px; }
-      .dr-splash-btn svg { width: 24px; height: 24px; }
-    }
-    .dr-splash-btn:hover, .dr-splash-btn:focus-visible { background: #FAF8F4; transform: translateY(-1px); outline: none; }
-    .dr-splash-btn:hover svg path, .dr-splash-btn:focus-visible svg path { fill: #065F46; }
-    .dr-splash-btn svg { width: 26px; height: 26px; }
-    .dr-splash-btn svg path { transition: fill .15s ease; }
-  </style>
+  <!-- Day / night toggle: moon by day, sun by night. Pairs with the AXS button
+       below it and drives the same dark-mode preference. On the homepage the
+       village scene listens for the class change and turns to night. -->
+  <button id="nightToggle" type="button" aria-label="Switch between day and night" title="Day / night"></button>
   <script>
-    document.getElementById('dr-splash-btn')?.addEventListener('click', () => {
-      if (document.getElementById('dr-splash')) window.dispatchEvent(new Event('dr-open-splash'));
-      else window.location.href = '/#open-splash';
+    const ICON_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+    const ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M19.4 4.6l-1.8 1.8M6.4 17.6l-1.8 1.8"/></svg>';
+    const nightBtn = document.getElementById('nightToggle');
+    const syncIcon = () => {
+      if (nightBtn) nightBtn.innerHTML = document.documentElement.classList.contains('axs-dark-mode') ? ICON_SUN : ICON_MOON;
+    };
+    syncIcon();
+    new MutationObserver(syncIcon).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    nightBtn?.addEventListener('click', () => {
+      const on = !document.documentElement.classList.contains('axs-dark-mode');
+      document.documentElement.classList.toggle('axs-dark-mode', on);
+      // keep the AXS widget's saved preference in step
+      try {
+        const p = JSON.parse(localStorage.getItem('axs-prefs') || '{}');
+        p.darkMode = on;
+        localStorage.setItem('axs-prefs', JSON.stringify(p));
+      } catch (e) { /* private mode */ }
     });
   </script>
 

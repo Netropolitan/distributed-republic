@@ -2,21 +2,21 @@
 import Base from '../layouts/Base.astro';
 // The live events feed will embed here via an iframe served through Tailscale
 // Funnel (the Brew events public-delivery pattern), filtered to DR-tagged events.
-// Placeholder until the backend Events feature (Phase 2) is wired.
+// Placeholder until the backend Events feature is wired.
 const EVENTS_EMBED_SRC = ''; // e.g. https://<funnel-host>/events/embed?tag=dr
 ---
 <Base title="Events · Distributed Republic" description="Gatherings, open days, shared meals, and conversations about community living with Distributed Republic.">
   <section class="container section">
-    <p class="eyebrow">Events</p>
+    <span class="step-tag">Events · The gathering</span>
     <h1>Gatherings, visits, and conversations.</h1>
-    <p class="lead" style="max-width:66ch">Open days, shared meals, work weekends, and conversations about community living. This is where we meet in person and online.</p>
+    <p class="lead" style="max-width:62ch">Open days, shared meals, work weekends, and conversations about community living. This is where we meet in person and online.</p>
 
     <div style="margin-top:32px">
       {EVENTS_EMBED_SRC ? (
-        <iframe src={EVENTS_EMBED_SRC} title="Distributed Republic events" style="width:100%;min-height:680px;border:1px solid var(--line);border-radius:var(--radius)" loading="lazy"></iframe>
+        <iframe src={EVENTS_EMBED_SRC} title="Distributed Republic events" style="width:100%;min-height:680px;border:2px solid var(--forest-dark);border-radius:16px" loading="lazy"></iframe>
       ) : (
-        <div class="card" style="text-align:center;padding:64px 28px">
-          <h3>No events listed yet</h3>
+        <div class="card" style="text-align:center;padding:56px 28px;max-width:640px;margin:0 auto">
+          <h2 style="font-size:clamp(24px,2.4vw,32px)">No events listed yet</h2>
           <p style="margin:0 auto">Our first gatherings are being planned. Check back soon, or <a href="/contact/">tell us you would like to be invited</a>.</p>
         </div>
       )}

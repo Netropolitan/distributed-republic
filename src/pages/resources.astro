@@ -1,26 +1,31 @@
 ---
 import Base from '../layouts/Base.astro';
 // Resources are documents uploaded to the HubSpot file manager and linked here
-// (the bykovbrett.net /resource pattern). Placeholder list until Phase 3.
-const resources: { title: string; desc: string; href: string }[] = [
-  // { title: 'Starting a community: a primer', desc: 'A short guide to the first steps.', href: 'https://...hubspot.../primer.pdf' },
+// (the bykovbrett.net /resource pattern). Placeholder list until wired.
+const resources: { title: string; desc: string; kind: string; href: string }[] = [
+  // { title: 'Starting a community: a primer', desc: 'A short guide to the first steps.', kind: 'PDF', href: 'https://...hubspot.../primer.pdf' },
 ];
 ---
 <Base title="Resources · Distributed Republic" description="Reading, guides, and tools on community living, governance, and the commons from Distributed Republic.">
   <section class="container section">
-    <p class="eyebrow">Resources</p>
+    <span class="step-tag">Resources · The mill</span>
     <h1>Reading, guides, and tools.</h1>
-    <p class="lead" style="max-width:66ch">Things we have found useful in thinking about community living, governance, and the commons. Downloadable guides will appear here.</p>
+    <p class="lead" style="max-width:62ch">Things we have found useful in thinking about community living, governance, and the commons. Downloadable guides will appear here.</p>
 
-    <div class="grid grid-2" style="margin-top:32px">
-      {resources.length ? resources.map((r) => (
-        <a class="card" href={r.href} style="text-decoration:none;display:block">
-          <h3>{r.title}</h3>
-          <p style="margin-bottom:0">{r.desc}</p>
-        </a>
-      )) : (
-        <div class="card" style="grid-column:1/-1;text-align:center;padding:56px 28px">
-          <h3>Resources coming soon</h3>
+    <div style="margin-top:32px;max-width:760px">
+      {resources.length ? (
+        <div class="list">
+          {resources.map((r) => (
+            <a href={r.href}>
+              <span class="when">{r.kind}</span>
+              <span><h3>{r.title}</h3><p>{r.desc}</p></span>
+              <span class="go">↓</span>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div class="card" style="text-align:center;padding:56px 28px">
+          <h2 style="font-size:clamp(24px,2.4vw,32px)">Resources coming soon</h2>
           <p style="margin:0 auto">We are putting together our first guides. <a href="/contact/">Ask us</a> if there is something specific you would like.</p>
         </div>
       )}
