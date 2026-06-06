@@ -12,18 +12,12 @@ const { Content } = await render(post);
 const fmt = (d: Date) => d.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric' });
 ---
 <Base title={`${post.data.title} · Distributed Republic`} description={post.data.description}>
-  <article class="container section" style="max-width:760px">
-    <a href="/blog/" style="font-size:14px">← All posts</a>
-    <p class="eyebrow" style="margin-top:20px">{fmt(post.data.pubDate)}</p>
-    <h1 style="font-size:clamp(34px,5vw,56px)">{post.data.title}</h1>
+  <article class="container section" style="max-width:800px">
+    <a class="see-all" href="/blog/" style="margin-top:0">← All posts</a>
+    <p style="font-family:var(--mono);font-size:12.5px;letter-spacing:2px;text-transform:uppercase;color:var(--deep);margin:26px 0 10px">{fmt(post.data.pubDate)}</p>
+    <h1 style="font-size:clamp(32px,4.5vw,58px)">{post.data.title}</h1>
     <div class="prose">
       <Content />
     </div>
   </article>
-
-  <style>
-    .prose :global(h2) { margin-top:1.6em; }
-    .prose :global(p) { font-size:18px; }
-    .prose :global(a) { color: var(--deep); }
-  </style>
 </Base>

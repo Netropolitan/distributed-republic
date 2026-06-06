@@ -1,77 +1,850 @@
 ---
 import Base from '../layouts/Base.astro';
-import ThreeObject from '../components/ThreeObject.astro';
-import Splash from '../components/Splash.astro';
-const pillars = [
-  { t: 'Campus', d: 'Shared kitchens, workshops, gardens and gathering halls. The physical and social commons where everyday life happens together.' },
-  { t: 'Curation', d: 'Who joins, how we welcome them, and how we share what we have. The careful stewardship of people, places, and pooled resources so a community keeps its character as it grows.' },
-  { t: 'Rituals', d: 'The recurring practices and shared culture that turn a group of people into a community.' },
-  { t: 'Contribution', d: 'What each person brings: time, skills, care, and resources. How we share and govern is the community\'s to decide, never handed down.' },
-];
+import EmailSignup from '../components/EmailSignup.astro';
+import { getCollection } from 'astro:content';
+
+// Latest real posts for the blog tour stop (empty array is handled gracefully)
+const posts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+  .slice(0, 3);
+const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 ---
-<Base title="Distributed Republic · Community living" description="We explore and build networked communities under an anarchic-agreements model: shared places, shared work, and the agreements we make together.">
-  <Splash />
-  <section class="container">
-    <div class="hero">
-      <div>
-        <p class="eyebrow">Community living</p>
-        <h1>A different way of living, built together.</h1>
-        <p class="lead">Distributed Republic explores and builds networked communities under an anarchic-agreements model. We are finding the right people and the right places to live, share, and contribute.</p>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px">
-          <a class="btn btn--primary" href="/about/">Read our story</a>
-          <a class="btn btn--ghost" href="/contact/">Get involved</a>
+<Base
+  title="Distributed Republic · Community living"
+  description="We explore and build networked communities under an anarchic-agreements model: shared places, shared work, and the agreements we make together. Scroll the village."
+  home={true}
+  hideSignupCta={true}
+>
+  <div id="scene" aria-hidden="true"></div>
+
+  <nav class="steps" aria-label="Tour stops">
+    <a class="step" href="#s0"><span class="dot"></span><span class="lbl">The village</span></a>
+    <a class="step" href="#s1"><span class="dot"></span><span class="lbl">The idea</span></a>
+    <a class="step" href="#s2"><span class="dot"></span><span class="lbl">The commons</span></a>
+    <a class="step" href="#s3"><span class="dot"></span><span class="lbl">The homes</span></a>
+    <a class="step" href="#s35"><span class="dot"></span><span class="lbl">The co-op</span></a>
+    <a class="step" href="#s4"><span class="dot"></span><span class="lbl">Events</span></a>
+    <a class="step" href="#s5"><span class="dot"></span><span class="lbl">Blog</span></a>
+    <a class="step" href="#s6"><span class="dot"></span><span class="lbl">Resources</span></a>
+    <a class="step" href="#follow"><span class="dot"></span><span class="lbl">Follow</span></a>
+  </nav>
+
+  <!-- S0 : welcome -->
+  <section class="stage" id="s0">
+    <div class="wrap">
+      <div class="card reveal">
+        <span class="step-tag">Stop 01 · The village</span>
+        <h1>Welcome to the village.</h1>
+        <p class="lead">Distributed Republic explores and builds networked communities under an anarchic-agreements model. Keep scrolling, and we will show you around.</p>
+        <div class="btn-row">
+          <a class="btn btn--solid" href="#s1">Take the tour</a>
+          <a class="btn btn--ghost" href="#follow">Get involved</a>
         </div>
       </div>
-      <ThreeObject type="village" height="480px" label="A small homestead of cabins and trees around a green, gently turning" />
     </div>
   </section>
 
-  <section class="section section--cream2">
-    <div class="container">
-      <p class="eyebrow">The framework</p>
-      <h2>Four pillars of community</h2>
-      <p style="margin-bottom:36px">Everything we build rests on four ideas. They shape how we choose places, welcome people, and live day to day.</p>
-      <div class="grid grid-2">
-        {pillars.map((p) => (
-          <div class="card">
-            <h3>{p.t}</h3>
-            <p style="margin-bottom:0">{p.d}</p>
+  <!-- S1 : the idea -->
+  <section class="stage" id="s1">
+    <div class="wrap">
+      <div class="card card--right reveal">
+        <span class="step-tag">Stop 02 · The idea</span>
+        <h2>More than a place.</h2>
+        <p>Community is more than living nearby. It is real overlap in each other's lives: shared meals, holidays celebrated together, taking turns with the children. Built on friendship and trust, not just an address. The village is a support network, not a postcode.</p>
+        <p>Distributed Republic is a values-led project, not a product. It is the work of Emilija and Jamie Bykov-Brett, and it is as much about helping you picture your own community living as it is about building ours.</p>
+        <div class="btn-row"><a class="btn btn--ghost" href="/about/">Read the full story</a></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S2 : the commons -->
+  <section class="stage" id="s2">
+    <div class="wrap">
+      <div class="card reveal">
+        <span class="step-tag">Stop 03 · The commons</span>
+        <h2>The commons comes first.</h2>
+        <p>Shared kitchens, workshops, gardens and gathering halls: the physical and social commons where everyday life happens together. Four pillars hold it up.</p>
+        <div class="chips">
+          <div class="chip"><h3>Campus</h3><p>The shared spaces where everyday life happens together.</p></div>
+          <div class="chip"><h3>Curation</h3><p>Who joins, how we welcome, how we share what we have.</p></div>
+          <div class="chip"><h3>Rituals</h3><p>The recurring practices that turn people into community.</p></div>
+          <div class="chip"><h3>Contribution</h3><p>Time, skills, care and resources; governed by everyone.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- S3 : the homes -->
+  <section class="stage" id="s3">
+    <div class="wrap">
+      <div class="card card--right reveal">
+        <span class="step-tag">Stop 04 · The homes</span>
+        <h2>Households, close by choice.</h2>
+        <p>A handful of households living closely, sharing meals, work and a co-op. Participation is encouraged, autonomy more so. How a community governs itself is written together, as a collective agreement, never handed down.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- S3.5 : the co-op -->
+  <section class="stage" id="s35">
+    <div class="wrap">
+      <div class="card reveal">
+        <span class="step-tag">Stop 05 · The co-op</span>
+        <h2>Stronger, together.</h2>
+        <p>A shared venture, a cooperative, can hold a community together: a retreat space, co-working, events, or working the land, with members sharing in the running and the rewards. Households linked this way are far more resilient when things get hard.</p>
+        <p>We take inspiration from the cooperative tradition, including Mondragon, where a network of member-owned businesses grew from a single community.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- S4 : the gathering = events -->
+  <section class="stage" id="s4">
+    <div class="wrap">
+      <div class="card card--right reveal" style="max-width:500px">
+        <span class="step-tag">Stop 06 · The gathering</span>
+        <h2>Events.</h2>
+        <p>Open days, shared meals, work weekends, and conversations about community living. This is where we meet, in person and online.</p>
+        <div class="list-empty">
+          <p>Our first gatherings are being planned. <a href="/#follow">Follow along</a> to be invited, or <a href="/contact/">tell us you would like to come</a>.</p>
+        </div>
+        <a class="see-all" href="/events/">All events →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- S5 : the network = blog -->
+  <section class="stage" id="s5">
+    <div class="wrap">
+      <div class="card reveal" style="max-width:500px">
+        <span class="step-tag">Stop 07 · The network</span>
+        <h2>Blog: notes from the journey.</h2>
+        <p>One village becomes two, then a network, each keeping its own character. We write down what we learn along the way.</p>
+        {posts.length > 0 ? (
+          <div class="list">
+            {posts.map((post) => (
+              <a href={`/blog/${post.id}/`}>
+                <span class="when">{fmt(post.data.pubDate)}</span>
+                <span><h3>{post.data.title}</h3><p>{post.data.description}</p></span>
+                <span class="go">→</span>
+              </a>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div class="list-empty"><p>The first notes are being written.</p></div>
+        )}
+        <a class="see-all" href="/blog/">All posts →</a>
       </div>
     </div>
   </section>
 
-  <section class="section section--forest">
-    <div class="container hero" style="padding-top:0;padding-bottom:0">
-      <ThreeObject type="tree" height="460px" label="A gently swaying low-poly tree with drifting fireflies" />
-      <div>
-        <p class="eyebrow">The commons</p>
-        <h2>Put down roots, together.</h2>
-        <p>The commons is the heart of it: shared spaces, shared work, and the agreements we make with one another. Not rules handed down, but a constitution we write together.</p>
-        <a class="btn btn--ghost" href="/about/">How it works</a>
+  <!-- S6 : the mill = resources -->
+  <section class="stage" id="s6">
+    <div class="wrap">
+      <div class="card card--right reveal" style="max-width:500px">
+        <span class="step-tag">Stop 08 · The mill</span>
+        <h2>Resources.</h2>
+        <p>Reading, guides, and tools we have found useful in thinking about community living, governance, and the commons.</p>
+        <div class="list-empty">
+          <p>We are putting together our first guides. <a href="/contact/">Ask us</a> if there is something specific you would like.</p>
+        </div>
+        <a class="see-all" href="/resources/">All resources →</a>
       </div>
     </div>
   </section>
 
-  <section class="section">
-    <div class="container hero" style="padding-block:0">
-      <div>
-        <p class="eyebrow">Not just a place</p>
-        <h2>A network of communities.</h2>
-        <p>One community is a handful of households living closely, sharing meals, work and a co-op. Distributed Republic links communities together so they can share knowledge, support and opportunity, each keeping its own character. The village is the support network, not the postcode.</p>
-        <a class="btn btn--ghost" href="/about/">The bigger picture</a>
+  <!-- S7 : follow -->
+  <section class="stage" id="follow">
+    <div class="wrap">
+      <div class="card reveal" style="max-width:520px">
+        <span class="step-tag">Stop 09 · Your place</span>
+        <h2>Picture your own community living.</h2>
+        <p>This is a space to imagine the way you would want to live, and to start the conversations that make it real. We are on this journey ourselves, and this is for anyone on a similar one. Some come along for the whole ride, some just want to follow the story.</p>
+        <EmailSignup tone="light" heading="" blurb="" />
+        <div class="btn-row">
+          <a class="btn btn--ghost" href="/contact/">Contact us</a>
+        </div>
       </div>
-      <ThreeObject type="nodes" height="440px" label="A slowly rotating cluster of connected nodes, a network of communities" />
-    </div>
-  </section>
-
-  <section class="section section--cream2">
-    <div class="container" style="text-align:center">
-      <p class="eyebrow">A journey, not a sign-up</p>
-      <h2>Picture your own community living.</h2>
-      <p style="margin:0 auto 24px">This is a space to imagine the way you would want to live, and to start the conversations that make it real. We are on this journey ourselves, and this is for anyone on a similar one. Some come along for the whole ride, some just want to follow the story.</p>
-      <a class="btn btn--primary" href="/contact/">Start a conversation</a>
     </div>
   </section>
 </Base>
+
+<style is:global>
+  /* ---------- homepage tour layout ---------- */
+  #scene { position: fixed; inset: 0; z-index: 0; }
+  main#main { position: relative; z-index: 10; }
+  /* the canvas lives INSIDE main here, so each stage must stack above it */
+  .stage { position: relative; z-index: 2; min-height: 100vh; display: flex; align-items: center; padding: 110px 0; }
+  .stage .wrap { width: 100%; max-width: var(--maxw); margin: 0 auto; padding: 0 var(--gutter); }
+  .card--right { margin-left: auto; }
+  .stage .card { max-width: 450px; }
+
+  /* tour stop rail */
+  .steps {
+    position: fixed; left: 26px; top: 50%; transform: translateY(-50%); z-index: 40;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .steps .step { display: flex; align-items: center; gap: 10px; padding: 6px 0; text-decoration: none; }
+  .steps .dot {
+    width: 12px; height: 12px; border: 2px solid var(--forest-dark); border-radius: 3px;
+    background: transparent; transition: background .3s, transform .3s;
+  }
+  .steps .lbl {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: var(--body-grey); opacity: 0; transform: translateX(-6px); transition: opacity .3s, transform .3s;
+  }
+  .steps .step.done .dot { background: var(--sage); }
+  .steps .step.on .dot { background: var(--forest); transform: rotate(45deg); }
+  .steps .step.on .lbl, .steps .step:hover .lbl { opacity: 1; transform: none; }
+  @media (max-width: 920px) { .steps { display: none; } }
+
+  /* AXS dark mode: keep the scroll layers transparent so the night village
+     shows through (the widget's catch-all forces opaque backgrounds).
+     The doubled :not(#axs-widget-root) matches the widget rule's specificity. */
+  html.axs-dark-mode > body main#main:not(#axs-widget-root):not(#axs-widget-root),
+  html.axs-dark-mode > body section.stage:not(#axs-widget-root):not(#axs-widget-root),
+  html.axs-dark-mode > body .stage .wrap:not(#axs-widget-root):not(#axs-widget-root),
+  html.axs-dark-mode > body #scene:not(#axs-widget-root):not(#axs-widget-root) {
+    background-color: transparent !important;
+  }
+</style>
+
+<script>
+  import * as THREE from 'three';
+
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const mount = document.getElementById('scene');
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+  } catch (err) {
+    // no WebGL: a calm gradient stands in for the village and the content stays readable
+    if (mount) mount.style.background = 'linear-gradient(180deg, #F3EEE1 0%, #DCEEE5 60%, #BFDCC8 100%)';
+    throw err;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  mount.appendChild(renderer.domElement);
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xF3EEE1);
+
+  const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 300);
+
+  const hemi = new THREE.HemisphereLight(0xFFFBEA, 0xCBDCC4, 1.2);
+  scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xFFF2CE, 1.4);
+  sun.position.set(30, 50, 20);
+  scene.add(sun);
+  const fillL = new THREE.DirectionalLight(0xCFE6DC, 0.45);
+  fillL.position.set(-30, 20, -20);
+  scene.add(fillL);
+
+  let seed = 17;
+  const rand = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+
+  // ---------- the turntable ----------
+  const table = new THREE.Group();
+  scene.add(table);
+
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(17, 18, 2.6, 48),
+    new THREE.MeshStandardMaterial({ color: 0xEDE5D0, flatShading: true, roughness: 1 })
+  );
+  // top cap at -0.2: safely below the lawn everywhere outside the lake bowl
+  base.position.y = -1.5;
+  table.add(base);
+  const baseRim = new THREE.Mesh(
+    new THREE.TorusGeometry(17.45, 0.22, 10, 64),
+    new THREE.MeshStandardMaterial({ color: 0x065F46, roughness: 0.7 })
+  );
+  baseRim.rotation.x = Math.PI / 2;
+  baseRim.position.y = 0.02;
+  table.add(baseRim);
+
+  // terrain height: mostly flat, two gentle rises, a mound up to the dock,
+  // a carved lake basin (east third) and level ground around the spring pool
+  const LAKE = { x: 9.0, z: 1, r: 7.2 };
+  function hAt(x, z) {
+    const r = Math.hypot(x, z);
+    let y = Math.max(0, Math.cos(r * 0.12)) * 0.15
+      + Math.exp(-((x + 8) ** 2 + (z + 6) ** 2) / 26) * 0.8
+      + Math.exp(-((x - 2) ** 2 + (z + 11) ** 2) / 30) * 0.55
+      + Math.exp(-((x - 0.2) ** 2 + (z - 0.2) ** 2) / 6) * 0.55;
+    const d = Math.hypot(x - LAKE.x, z - LAKE.z);
+    if (d < LAKE.r + 0.6) { const k = Math.min(1, (LAKE.r + 0.6 - d) / 2.2); y = y * (1 - k) - 0.45 * k; }
+    const dp = Math.hypot(x + 13.6, z + 5.8);
+    if (dp < 3.0) { const k = Math.min(1, (3.0 - dp) / 1.6); y = y * (1 - k) + 0.02 * k; }
+    return y;
+  }
+  // displaced grid disc (a plain CircleGeometry has no interior vertices to carve)
+  const topGeo = new THREE.PlaneGeometry(34, 34, 80, 80);
+  topGeo.rotateX(-Math.PI / 2);
+  const tpp = topGeo.attributes.position;
+  for (let i = 0; i < tpp.count; i++) {
+    let x = tpp.getX(i), z = tpp.getZ(i);
+    const r = Math.hypot(x, z);
+    if (r > 17) { const s = 17 / r; x *= s; z *= s; tpp.setX(i, x); tpp.setZ(i, z); }
+    tpp.setY(i, hAt(x, z));
+  }
+  topGeo.computeVertexNormals();
+  const lawn = new THREE.Mesh(topGeo, new THREE.MeshStandardMaterial({ color: 0x8DBE72, flatShading: true, roughness: 1 }));
+  table.add(lawn);
+
+  // ---------- the lake ----------
+  const lakeMesh = new THREE.Mesh(
+    new THREE.CircleGeometry(LAKE.r, 48),
+    new THREE.MeshStandardMaterial({ color: 0x8FC8D8, flatShading: true, roughness: 0.25 })
+  );
+  lakeMesh.rotation.x = -Math.PI / 2;
+  lakeMesh.position.set(LAKE.x, 0.1, LAKE.z);
+  table.add(lakeMesh);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + 0.3;
+    const sx = LAKE.x + Math.cos(a) * (LAKE.r + 0.5), sz = LAKE.z + Math.sin(a) * (LAKE.r + 0.5);
+    if (Math.hypot(sx, sz) > 16.3) continue;
+    const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.16 + rand() * 0.12, 0),
+      new THREE.MeshStandardMaterial({ color: 0xC8BCA2, flatShading: true, roughness: 1 }));
+    st.position.set(sx, hAt(sx, sz) + 0.12, sz);
+    table.add(st);
+  }
+
+  // ---------- the village ----------
+  const stages = [];
+  function stageGroup() { const g = new THREE.Group(); table.add(g); stages.push(g); return g; }
+
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x9B7A56, flatShading: true, roughness: 1 });
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xF2E3C8, flatShading: true, roughness: 1 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0xD88C6A, flatShading: true, roughness: 1 });
+  const roofMat2 = new THREE.MeshStandardMaterial({ color: 0x065F46, flatShading: true, roughness: 1 });
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x84603F, flatShading: true, roughness: 1 });
+  const leafMats = [0x4F8F5C, 0x67A86B, 0x3E7B4E].map(c => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 1 }));
+
+  function tree(g, x, z, s = 1) {
+    const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 1, 5), trunkMat);
+    const y = hAt(x, z);
+    tr.position.set(x, y + 0.5 * s, z); tr.scale.setScalar(s); g.add(tr);
+    const lv = new THREE.Mesh(new THREE.IcosahedronGeometry(0.85, 0), leafMats[Math.floor(rand() * 3)]);
+    lv.position.set(x, y + (1 + 0.75) * s, z); lv.scale.setScalar(s); lv.scale.y *= 1.25; g.add(lv);
+  }
+  const doorMat = new THREE.MeshStandardMaterial({ color: 0x065F46 });
+  const windowMat = new THREE.MeshStandardMaterial({ color: 0xBFDFE8, roughness: 0.2 });
+  function house(g, x, z, ry = 0, s = 1, roof = roofMat) {
+    const grp = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.1, 1.3), wallMat);
+    body.position.y = 0.55; grp.add(body);
+    const r = new THREE.Mesh(new THREE.ConeGeometry(1.35, 0.85, 4), roof);
+    r.position.y = 1.52; r.rotation.y = Math.PI / 4; r.scale.x = 1.18; grp.add(r);
+    const door = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.5), doorMat);
+    door.position.set(0, 0.35, 0.66); grp.add(door);
+    for (const wx of [-0.5, 0.5]) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.32), windowMat);
+      w.position.set(wx, 0.62, 0.66); grp.add(w);
+    }
+    for (const sideX of [-0.86, 0.86]) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.32, 0.32), windowMat);
+      w.position.set(sideX, 0.6, 0); w.rotation.y = sideX > 0 ? Math.PI / 2 : -Math.PI / 2;
+      grp.add(w);
+    }
+    grp.position.set(x, hAt(x, z), z); grp.rotation.y = ry; grp.scale.setScalar(s);
+    g.add(grp);
+  }
+
+  // trees
+  const gTrees = stageGroup();
+  const treeSpots = [[-12, -2], [-9.2, -5.8], [-13.5, 3], [-15, -0.5], [-3, -13], [1, -13.5], [5, -12.5], [9, -11.5], [12.5, -7.5], [14.5, -6.5], [-7.5, 11], [-11, 7.5], [-5, 13.2], [0.5, 14], [4, 11.5], [4.8, 13.4]];
+  treeSpots.forEach(([x, z]) => tree(gTrees, x, z, 0.8 + rand() * 0.7));
+
+  // the commons: hall + allotment + scarecrow
+  const gCommons = stageGroup();
+  (function () {
+    const hall = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.7, 2.4), wallMat);
+    body.position.y = 0.85; hall.add(body);
+    // a true rectangular gable roof: triangle cross-section extruded along the ridge
+    const gableShape = new THREE.Shape();
+    gableShape.moveTo(-1.45, 0); gableShape.lineTo(1.45, 0); gableShape.lineTo(0, 1.15); gableShape.closePath();
+    const roofGeo = new THREE.ExtrudeGeometry(gableShape, { depth: 4.1, bevelEnabled: false });
+    roofGeo.translate(0, 0, -2.05);
+    const r = new THREE.Mesh(roofGeo, roofMat2);
+    r.rotation.y = Math.PI / 2;
+    r.position.y = 1.7;
+    hall.add(r);
+    const hallDoor = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.0), doorMat);
+    hallDoor.position.set(0, 0.5, 1.21); hall.add(hallDoor);
+    for (const wx of [-1.2, 1.2]) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.55), windowMat);
+      w.position.set(wx, 0.95, 1.21); hall.add(w);
+    }
+    for (const sideX of [-1.81, 1.81]) {
+      const w = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.55), windowMat);
+      w.position.set(sideX, 0.95, 0); w.rotation.y = sideX > 0 ? Math.PI / 2 : -Math.PI / 2;
+      hall.add(w);
+    }
+    hall.position.set(0, hAt(0, -2), -2);
+    gCommons.add(hall);
+    // the community allotment: six varied beds and a scarecrow
+    const bedMat = new THREE.MeshStandardMaterial({ color: 0x7A5B3C, flatShading: true, roughness: 1 });
+    const cropCols = [0x4F8F5C, 0xF4CE6A, 0xD88C6A, 0x67A86B, 0xA7D8C4, 0x3E7B4E];
+    let bi = 0;
+    for (const bz of [-4.3, -3.0]) for (const bx of [-7.0, -5.4, -3.8]) {
+      const bed = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.22, 0.75), bedMat);
+      bed.position.set(bx, hAt(bx, bz) + 0.12, bz);
+      gCommons.add(bed);
+      const cMat = new THREE.MeshStandardMaterial({ color: cropCols[bi++ % 6], flatShading: true, roughness: 1 });
+      for (let p = 0; p < 4; p++) {
+        const veg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11 + rand() * 0.05, 0), cMat);
+        veg.position.set(bx - 0.45 + p * 0.3, hAt(bx, bz) + 0.3, bz + (rand() - 0.5) * 0.28);
+        gCommons.add(veg);
+      }
+    }
+    const scX = -4.2, scZ = -4.6, scY = hAt(scX, scZ);
+    const scPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 5), woodMat);
+    scPole.position.set(scX, scY + 0.55, scZ); gCommons.add(scPole);
+    const scArm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.06), woodMat);
+    scArm.position.set(scX, scY + 0.85, scZ); gCommons.add(scArm);
+    const scHead = new THREE.Mesh(new THREE.SphereGeometry(0.14, 7, 7), wallMat);
+    scHead.position.set(scX, scY + 1.12, scZ); gCommons.add(scHead);
+    const scHat = new THREE.Mesh(new THREE.ConeGeometry(0.17, 0.18, 6),
+      new THREE.MeshStandardMaterial({ color: 0xC9A24B, flatShading: true, roughness: 1 }));
+    scHat.position.set(scX, scY + 1.28, scZ); gCommons.add(scHat);
+  })();
+
+  // homes spread around the green, none touching
+  const gHomes = stageGroup();
+  [[-4.5, 0.2, 0.6], [-3.8, 4.2, 1.2], [-0.8, 6.2, 0.1], [1.6, 5.6, -0.7], [-6.5, 2.8, -0.5]].forEach(([x, z, ry], i) => house(gHomes, x, z, ry, 0.9 + (i % 3) * 0.07));
+
+  // the gathering: firepit on the west meadow; table + bunting on the north green
+  const gGather = stageGroup();
+  (function () {
+    const x0 = -8.2, z0 = 6.6, gy = hAt(x0, z0);
+    const fire = new THREE.Group();
+    const flameO = new THREE.Mesh(new THREE.ConeGeometry(0.34, 0.62, 6),
+      new THREE.MeshStandardMaterial({ color: 0xF4A04A, emissive: 0xD96B2B, emissiveIntensity: 0.8, flatShading: true }));
+    flameO.position.y = 0.42; fire.add(flameO);
+    const flameI = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.4, 6),
+      new THREE.MeshStandardMaterial({ color: 0xFFD98A, emissive: 0xFFB347, emissiveIntensity: 1, flatShading: true }));
+    flameI.position.y = 0.56; fire.add(flameI);
+    for (let i = 0; i < 3; i++) {
+      const log = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.7, 5),
+        new THREE.MeshStandardMaterial({ color: 0x4A3526, flatShading: true, roughness: 1 }));
+      log.rotation.z = Math.PI / 2; log.rotation.y = i * 1.05;
+      log.position.y = 0.12; fire.add(log);
+    }
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2;
+      const stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.17, 0),
+        new THREE.MeshStandardMaterial({ color: 0xBFB49C, flatShading: true, roughness: 1 }));
+      stone.position.set(Math.cos(a) * 0.78, 0.1, Math.sin(a) * 0.78);
+      fire.add(stone);
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.15, 6), woodMat);
+      seat.rotation.z = Math.PI / 2; seat.rotation.y = -a + Math.PI / 2;
+      seat.position.set(Math.cos(a) * 1.5, 0.16, Math.sin(a) * 1.5);
+      fire.add(seat);
+    }
+    fire.position.set(x0, gy, z0);
+    gGather.add(fire);
+    const fireLight = new THREE.PointLight(0xFF9240, 1.4, 9, 1.8);
+    fireLight.position.set(x0, gy + 0.8, z0);
+    gGather.add(fireLight);
+    gGather.userData.fireLight = fireLight;
+    // long table on the open north green, under the lanterns
+    const tx = -2.5, tz = 11.5, ty = hAt(tx, tz);
+    const tbl = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.6), woodMat);
+    tbl.position.set(tx, ty + 0.55, tz);
+    gGather.add(tbl);
+    [-1, 1].forEach((side) => {
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.07, 0.25), woodMat);
+      bench.position.set(tx, ty + 0.34, tz + side * 0.55);
+      gGather.add(bench);
+    });
+    [[-4.4, 9.5], [-0.6, 10.3]].forEach(([x, z], pi) => {
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 5), woodMat);
+      pole.position.set(x, hAt(x, z) + 1.1, z);
+      gGather.add(pole);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32),
+        new THREE.MeshBasicMaterial({ color: pi ? 0xF4CE6A : 0xA7D8C4, side: THREE.DoubleSide }));
+      flag.position.set(x + 0.3, hAt(x, z) + 2.05, z);
+      gGather.add(flag);
+    });
+  })();
+
+  // the second hamlet across the lake, joined by a dock and a rowboat
+  const gNetwork = stageGroup();
+  (function () {
+    [[9.2, 11.6, 0.5], [11.6, 9.8, -0.6], [7.2, 12.8, 1.8]].forEach(([x, z, ry]) => house(gNetwork, x, z, ry, 0.85, roofMat2));
+    // one dock: a walkway from the mound out to a square platform
+    const dockG = new THREE.Group();
+    const walk = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.14, 0.8), woodMat);
+    walk.position.set(1.7, 0.62, 0); dockG.add(walk);
+    const plat = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.14, 2.2), woodMat);
+    plat.position.set(4.4, 0.62, 0); dockG.add(plat);
+    [[0.4, -0.28], [0.4, 0.28], [2.6, -0.28], [2.6, 0.28], [3.45, -0.95], [3.45, 0.95], [5.35, -0.95], [5.35, 0.95]].forEach(([px, pz]) => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 1.15, 5), woodMat);
+      post.position.set(px, 0.1, pz); dockG.add(post);
+    });
+    dockG.position.set(0.9, 0.1, 0.35);
+    dockG.rotation.y = -0.25;
+    gNetwork.add(dockG);
+    const boat = new THREE.Group();
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.65), woodMat);
+    hull.position.y = 0.15; boat.add(hull);
+    const inner = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.16, 0.4), wallMat);
+    inner.position.y = 0.3; boat.add(inner);
+    boat.position.set(7.4, 0.1, 4.6); boat.rotation.y = 0.6;
+    gNetwork.add(boat);
+    gNetwork.userData.boat = boat;
+  })();
+
+  // the watermill beside the river
+  const gMill = stageGroup();
+  (function () {
+    const mx = -5.9, mz = -8.0; // tower well up on the bank, clear of the water
+    const towerM = new THREE.Group();
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 1.1, 2.4, 8), wallMat);
+    tower.position.y = 1.2; towerM.add(tower);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(1.15, 1, 8), roofMat);
+    cap.position.y = 2.9; towerM.add(cap);
+    const mDoor = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.85), doorMat);
+    mDoor.position.set(0.52, 0.43, 0.92);
+    mDoor.rotation.y = Math.atan2(0.52, 0.92);
+    towerM.add(mDoor);
+    towerM.position.set(mx, hAt(mx, mz), mz);
+    gMill.add(towerM);
+    // the river: from the spring pool, past the mill, into the lake
+    const sPts = [[-12.6, -6.7], [-10.5, -8.6], [-7.6, -10.8], [-4.9, -10.1], [-2.6, -8.3], [-0.3, -6.5], [1.9, -5.0], [3.9, -3.7], [5.6, -2.5]].map(([x, z]) => new THREE.Vector3(x, 0, z));
+    const sCurve = new THREE.CatmullRomCurve3(sPts);
+    const SEGS = 80;
+    const rPos = [], rIdx = [];
+    for (let i = 0; i <= SEGS; i++) {
+      const u = i / SEGS;
+      const p = sCurve.getPointAt(u);
+      const tng = sCurve.getTangentAt(u);
+      const nx = -tng.z, nz = tng.x;
+      const w = 0.45 + u * 0.45;
+      for (const s of [1, -1]) {
+        const vx = p.x + nx * w * s, vz = p.z + nz * w * s;
+        let vy = hAt(vx, vz) + 0.07;
+        // under the pool disc the river sits a touch lower, so the pool laps over it
+        const dp = Math.hypot(vx + 13.6, vz + 5.8);
+        if (dp < 1.9) vy = Math.min(vy, 0.075);
+        rPos.push(vx, vy, vz);
+      }
+      if (i) { const k = i * 2; rIdx.push(k - 2, k - 1, k, k - 1, k + 1, k); }
+    }
+    const rGeo = new THREE.BufferGeometry();
+    rGeo.setAttribute('position', new THREE.Float32BufferAttribute(rPos, 3));
+    rGeo.setIndex(rIdx);
+    rGeo.computeVertexNormals();
+    const river = new THREE.Mesh(rGeo,
+      new THREE.MeshStandardMaterial({ color: 0x8FC8D8, flatShading: true, roughness: 0.3, side: THREE.DoubleSide }));
+    gMill.add(river);
+    // the spring pool at the source, ringed with stones
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(1.7, 24),
+      new THREE.MeshStandardMaterial({ color: 0x8FC8D8, flatShading: true, roughness: 0.3 }));
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.set(-13.6, 0.09, -5.8);
+    gMill.add(pool);
+    for (let i = 0; i < 7; i++) {
+      const a = (i / 7) * Math.PI * 2 + 0.5;
+      const px = -13.6 + Math.cos(a) * 2.0, pz = -5.8 + Math.sin(a) * 2.0;
+      const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.15 + rand() * 0.1, 0),
+        new THREE.MeshStandardMaterial({ color: 0xC8BCA2, flatShading: true, roughness: 1 }));
+      st.position.set(px, hAt(px, pz) + 0.12, pz);
+      gMill.add(st);
+    }
+    // waterwheel: its plane runs along the flow, dipping into the water
+    const wheel = new THREE.Group();
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(1.0, 0.1, 6, 14), woodMat);
+    wheel.add(ring);
+    for (let i = 0; i < 6; i++) {
+      const a = (i / 6) * Math.PI;
+      const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.08, 2.0, 0.16), woodMat);
+      spoke.rotation.z = a;
+      wheel.add(spoke);
+    }
+    wheel.position.set(-4.5, hAt(-4.5, -10.0) + 0.9, -10.0);
+    wheel.rotation.y = -0.66;
+    gMill.add(wheel);
+    gMill.userData.wheel = wheel;
+    const axle = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.1), woodMat);
+    axle.position.set(-5.2, hAt(-4.5, -10.0) + 0.9, -9.0);
+    axle.rotation.y = 0.96;
+    gMill.add(axle);
+  })();
+
+  // celebration: string lights + butterflies over the north green
+  const gParty = stageGroup();
+  (function () {
+    const A = [-4.4, 9.5], B = [-0.6, 10.3];
+    const pts = [];
+    for (let i = 0; i <= 16; i++) {
+      const u = i / 16;
+      const x = A[0] + (B[0] - A[0]) * u, z = A[1] + (B[1] - A[1]) * u;
+      pts.push(new THREE.Vector3(x, hAt(x, z) + 2.1 - Math.sin(u * Math.PI) * 0.35, z));
+    }
+    const wire = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: 0x4D5A52 }));
+    gParty.add(wire);
+    pts.forEach((p, i) => {
+      if (i % 2 === 0) return;
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 6, 6),
+        new THREE.MeshBasicMaterial({ color: i % 4 === 1 ? 0xF4CE6A : 0xFFF3CC }));
+      bulb.position.copy(p); bulb.position.y -= 0.12;
+      gParty.add(bulb);
+    });
+    // small butterflies fluttering over the green (they roost at night)
+    const butterflies = [];
+    const wingCols = [0xF4CE6A, 0xA7D8C4, 0xFFFFFF, 0xF2BFA4];
+    for (let i = 0; i < 6; i++) {
+      const b = new THREE.Group();
+      const mat = new THREE.MeshBasicMaterial({ color: wingCols[i % 4], side: THREE.DoubleSide, transparent: true, opacity: 0.95 });
+      const wingGeo = new THREE.CircleGeometry(0.016, 6);
+      const w1 = new THREE.Mesh(wingGeo, mat); w1.position.x = -0.013; w1.scale.set(1, 1.6, 1);
+      const w2 = new THREE.Mesh(wingGeo, mat); w2.position.x = 0.013; w2.scale.set(1, 1.6, 1);
+      b.add(w1, w2);
+      b.userData = {
+        w1, w2, flap: rand() * 10, speed: 0.25 + rand() * 0.3, ph: rand() * Math.PI * 2,
+        rx: 1.5 + rand() * 3, rz: 1.2 + rand() * 2.5, oy: 1.2 + rand() * 1.4,
+      };
+      gParty.add(b); butterflies.push(b);
+    }
+    gParty.userData.butterflies = butterflies;
+  })();
+
+  // ---------- clouds ----------
+  const cloudMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.95 });
+  const clouds = [];
+  for (let i = 0; i < 6; i++) {
+    const g = new THREE.Group();
+    for (let k = 0; k < 4; k++) {
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1.0 + rand() * 0.9, 1), cloudMat);
+      m.position.set(k * 1.5 - 2.2 + rand() * 0.8, rand() * 0.5, rand() * 0.8);
+      m.scale.y = 0.5; g.add(m);
+    }
+    const a = rand() * Math.PI * 2;
+    g.position.set(Math.cos(a) * (30 + rand() * 10), 22 + rand() * 8, Math.sin(a) * (30 + rand() * 10));
+    g.userData.a = a; g.userData.r = Math.hypot(g.position.x, g.position.z); g.userData.h = g.position.y;
+    scene.add(g); clouds.push(g);
+  }
+
+  // ---------- night mode : the dark-mode toggle turns the village to dusk ----------
+  let seed2 = 41;
+  const rand2 = () => { seed2 = (seed2 * 16807) % 2147483647; return seed2 / 2147483647; };
+  const N_STARS = 260;
+  const starGeo = new THREE.BufferGeometry();
+  const starPos = new Float32Array(N_STARS * 3);
+  for (let i = 0; i < N_STARS; i++) {
+    const a = rand2() * Math.PI * 2, e = 0.15 + rand2() * 1.2, r = 150;
+    starPos[i * 3] = Math.cos(a) * Math.cos(e) * r;
+    starPos[i * 3 + 1] = Math.sin(e) * r;
+    starPos[i * 3 + 2] = Math.sin(a) * Math.cos(e) * r;
+  }
+  starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xEAF4F0, size: 1.4, sizeAttenuation: false, transparent: true, opacity: 0.85 });
+  const stars = new THREE.Points(starGeo, starMat);
+  stars.visible = false;
+  scene.add(stars);
+  // fireflies in the southern woods (night only)
+  const FF = 22;
+  const ffGeo = new THREE.BufferGeometry();
+  const ffPos = new Float32Array(FF * 3), ffSeed = new Float32Array(FF);
+  for (let i = 0; i < FF; i++) {
+    ffPos[i * 3] = -2 + (rand2() - 0.5) * 7;
+    ffPos[i * 3 + 1] = 1 + rand2() * 3.2;
+    ffPos[i * 3 + 2] = -11.5 + (rand2() - 0.5) * 6;
+    ffSeed[i] = rand2() * 100;
+  }
+  ffGeo.setAttribute('position', new THREE.BufferAttribute(ffPos, 3));
+  const ffMat = new THREE.PointsMaterial({ color: 0xFFE9A0, size: 0.28, transparent: true, opacity: 0.9, sizeAttenuation: true });
+  const fireflies = new THREE.Points(ffGeo, ffMat);
+  fireflies.visible = false;
+  table.add(fireflies);
+  // subtle embers drifting up from the firepit (night only)
+  const EMB = 16;
+  const embY = hAt(-8.2, 6.6);
+  const embGeo = new THREE.BufferGeometry();
+  const embPos = new Float32Array(EMB * 3), embSeed = new Float32Array(EMB);
+  for (let i = 0; i < EMB; i++) {
+    embPos[i * 3] = -8.2 + (rand2() - 0.5) * 0.5;
+    embPos[i * 3 + 1] = embY + 0.3 + rand2() * 1.8;
+    embPos[i * 3 + 2] = 6.6 + (rand2() - 0.5) * 0.5;
+    embSeed[i] = rand2() * 100;
+  }
+  embGeo.setAttribute('position', new THREE.BufferAttribute(embPos, 3));
+  const embMat = new THREE.PointsMaterial({ color: 0xFFA85C, size: 0.09, transparent: true, opacity: 0.8, sizeAttenuation: true });
+  const embers = new THREE.Points(embGeo, embMat);
+  embers.visible = false;
+  table.add(embers);
+
+  let isNight = false;
+  function setNight(on) {
+    if (on === isNight) return;
+    isNight = on;
+    scene.background.set(on ? 0x07211B : 0xF3EEE1);
+    hemi.color.set(on ? 0x2E4A40 : 0xFFFBEA);
+    hemi.groundColor.set(on ? 0x0A1F18 : 0xCBDCC4);
+    hemi.intensity = on ? 0.35 : 1.2;
+    sun.color.set(on ? 0x9FC4D8 : 0xFFF2CE); // moonlight
+    sun.intensity = on ? 0.5 : 1.4;
+    fillL.intensity = on ? 0.12 : 0.45;
+    windowMat.emissive.set(on ? 0xFFC97A : 0x000000);
+    windowMat.emissiveIntensity = on ? 0.85 : 0;
+    cloudMat.color.set(on ? 0x3A4A44 : 0xFFFFFF);
+    cloudMat.opacity = on ? 0.4 : 0.95;
+    if (gGather.userData.fireLight) gGather.userData.fireLight.intensity = on ? 2.6 : 1.4;
+    stars.visible = on;
+    fireflies.visible = on;
+    embers.visible = on;
+    gParty.userData.butterflies.forEach((b) => { b.visible = !on; }); // butterflies roost at night
+  }
+  new MutationObserver(() => setNight(document.documentElement.classList.contains('axs-dark-mode')))
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+  setNight(document.documentElement.classList.contains('axs-dark-mode'));
+  // inline !important so the AXS dark-mode catch-all can never paint over the village
+  document.querySelectorAll('main, main .stage, main .wrap, #scene, .steps, .steps .step, .steps .lbl').forEach((el) =>
+    el.style.setProperty('background-color', 'transparent', 'important'));
+
+  // ---------- scroll-driven guided tour ----------
+  const sections = [...document.querySelectorAll('main .stage')];
+  const stepEls = [...document.querySelectorAll('.steps .step')];
+  const FOCI = [
+    { tx: 0,    ty: 1.2, tz: 0,    r: 44, h: 24, side:  1 },   // s0 hero · whole village
+    { tx: 0,    ty: 1.0, tz: 0,    r: 33, h: 16, side: -1 },   // s1 idea · closer overview
+    { tx: -2.6, ty: 1.2, tz: -2.4, r: 19, h: 10.5, side:  1 }, // s2 hall + allotment
+    { tx: -2,   ty: 0.9, tz: 3,    r: 17, h: 9.5, side: -1 },  // s3 homes round the green
+    { tx: -5.4, ty: 0.9, tz: -3.6, r: 14, h: 9,  side:  1 },   // s35 co-op · the growing beds
+    { tx: -3.6, ty: 0.8, tz: 9.6,  r: 15, h: 8.5, side: -1 },  // s4 the gathering green
+    { tx: 7.8,  ty: 0.4, tz: 5.5,  r: 20, h: 12, side:  1 },   // s5 lake + dock platform
+    { tx: -5.4, ty: 1.0, tz: -8.8, r: 13, h: 8,  side: -1 },   // s6 watermill + river
+    { tx: 0,    ty: 1.2, tz: 0,    r: 40, h: 21, side:  1 },   // s7 follow · pull back out
+  ];
+
+  function tourProgress() {
+    const vh = window.innerHeight;
+    let p = 0;
+    for (const sec of sections) {
+      const r = sec.getBoundingClientRect();
+      p += THREE.MathUtils.clamp((vh / 2 - r.top) / r.height, 0, 1);
+    }
+    return THREE.MathUtils.clamp(p - 0.5, 0, FOCI.length - 1);
+  }
+  const ease = (u) => u * u * (3 - 2 * u);
+
+  let mx = 0, my = 0, smx = 0, smy = 0;
+  window.addEventListener('pointermove', (e) => {
+    mx = e.clientX / window.innerWidth - 0.5;
+    my = e.clientY / window.innerHeight - 0.5;
+  });
+
+  let smoothP = 0;
+  const camTarget = new THREE.Vector3();
+  const camRight = new THREE.Vector3();
+  const up = new THREE.Vector3(0, 1, 0);
+
+  const clock = new THREE.Clock();
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.05);
+    t += dt;
+    if (!prefersReduced) { smx += (mx - smx) * 0.03; smy += (my - smy) * 0.03; }
+
+    smoothP += (tourProgress() - smoothP) * (prefersReduced ? 1 : 0.055);
+    const i0 = Math.floor(smoothP);
+    const i1 = Math.min(i0 + 1, FOCI.length - 1);
+    const f = ease(smoothP - i0);
+    const a = FOCI[i0], b = FOCI[i1];
+    const L = (k) => a[k] + (b[k] - a[k]) * f;
+
+    const wide = window.innerWidth > 920;
+    const ang = 0.7 + smoothP * 0.55 + (prefersReduced ? 0 : t * 0.014);
+    const rad = L('r'), hgt = L('h');
+    camTarget.set(L('tx'), L('ty'), L('tz'));
+    camera.position.set(
+      camTarget.x + Math.cos(ang) * rad + smx * 3,
+      hgt + smy * -2,
+      camTarget.z + Math.sin(ang) * rad
+    );
+    if (wide) {
+      camRight.subVectors(camTarget, camera.position).cross(up).normalize();
+      const shift = L('side') * rad * -0.3;
+      camera.position.addScaledVector(camRight, shift);
+      camTarget.addScaledVector(camRight, shift);
+    }
+    camera.lookAt(camTarget);
+
+    // life in the model
+    if (gMill.userData.wheel) gMill.userData.wheel.rotation.z = t * 0.7;
+    gParty.userData.butterflies.forEach((b) => {
+      if (!b.visible) return;
+      const u = b.userData;
+      const ba = t * u.speed + u.ph;
+      b.position.set(-2.5 + Math.cos(ba) * u.rx, hAt(-2.5, 10.2) + u.oy + Math.sin(ba * 1.9) * 0.3, 10.2 + Math.sin(ba) * u.rz);
+      b.rotation.y = -ba;
+      const fl = Math.sin(t * 9 + u.flap) * 0.75;
+      u.w1.rotation.y = fl; u.w2.rotation.y = -fl;
+    });
+    const boat = gNetwork.userData.boat;
+    if (boat) { boat.position.y = 0.1 + Math.sin(t * 0.9) * 0.035; boat.rotation.z = Math.sin(t * 0.7) * 0.04; }
+    if (fireflies.visible) {
+      const fp = ffGeo.attributes.position;
+      for (let i = 0; i < FF; i++) {
+        fp.array[i * 3] += Math.cos(t * 0.35 + ffSeed[i]) * 0.006;
+        fp.array[i * 3 + 1] += Math.sin(t * 0.6 + ffSeed[i] * 1.7) * 0.005;
+      }
+      fp.needsUpdate = true;
+      ffMat.opacity = 0.5 + Math.sin(t * 1.4) * 0.35;
+    }
+    if (embers.visible) {
+      const ep = embGeo.attributes.position;
+      for (let i = 0; i < EMB; i++) {
+        ep.array[i * 3 + 1] += dt * (0.22 + (embSeed[i] % 1) * 0.3);
+        ep.array[i * 3] += Math.sin(t * 1.6 + embSeed[i]) * 0.004;
+        ep.array[i * 3 + 2] += Math.cos(t * 1.3 + embSeed[i] * 2) * 0.004;
+        if (ep.array[i * 3 + 1] > embY + 2.6) {
+          ep.array[i * 3] = -8.2 + (Math.random() - 0.5) * 0.4;
+          ep.array[i * 3 + 1] = embY + 0.3;
+          ep.array[i * 3 + 2] = 6.6 + (Math.random() - 0.5) * 0.4;
+        }
+      }
+      ep.needsUpdate = true;
+      embMat.opacity = 0.55 + Math.sin(t * 6.5) * 0.2;
+    }
+    clouds.forEach((c) => {
+      c.userData.a += dt * 0.012;
+      c.position.set(Math.cos(c.userData.a) * c.userData.r, c.userData.h, Math.sin(c.userData.a) * c.userData.r);
+    });
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  // reveals + tour rail state
+  const io = new IntersectionObserver((es) => {
+    es.forEach((e) => {
+      if (!e.isIntersecting) return;
+      e.target.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+      const idx = sections.indexOf(e.target);
+      stepEls.forEach((s, i) => {
+        s.classList.toggle('on', i === idx);
+        s.classList.toggle('done', i < idx);
+        // inline colours so the dark-mode catch-all can't black out the dots
+        s.querySelector('.dot').style.setProperty(
+          'background-color',
+          i === idx ? '#065F46' : i < idx ? '#A7D8C4' : 'transparent',
+          'important'
+        );
+      });
+    });
+  }, { threshold: 0.4 });
+  sections.forEach((s) => io.observe(s));
+</script>
