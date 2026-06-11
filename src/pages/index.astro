@@ -803,6 +803,24 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       gFolk.add(p); folk.push(p);
     });
   }
+  // eight more villagers who only come out for the evening fire (hidden by day)
+  const fireGuests = [];
+  {
+    const guestCols = [0xA7D8C4, 0xC9A24B, 0x67A86B, 0xB85C48, 0x3E7CB8, 0xF2BFA4, 0x065F46, 0xD88C6A];
+    for (let i = 0; i < 8; i++) {
+      const p = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.3, 6),
+        new THREE.MeshStandardMaterial({ color: guestCols[i], flatShading: true, roughness: 1 }));
+      body.position.y = 0.15; p.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
+      head.position.y = 0.38; p.add(head);
+      p.scale.setScalar(0.92 + rand() * 0.14);
+      p.userData = { head };
+      p.visible = false;
+      gFolk.add(p); fireGuests.push(p);
+    }
+  }
+  const fireCircle = [...folk, ...fireGuests]; // 12 seats: three along each of the four logs
   // every so often two neighbours walk over and have a chat (the hamlet villager
   // is across the lake, so meetups happen between the three western patches)
   const meet = { phase: 'wait', timer: 9, a: 0, b: 0 };
@@ -911,18 +929,24 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       meet.phase = 'wait'; meet.timer = 12;
     }
     const gy = hAt(-8.2, 6.6);
-    folk.forEach((p, i) => {
+    fireCircle.forEach((p, s) => {
       const v = p.userData;
       if (on) {
-        const a = (i / folk.length) * Math.PI * 2 + Math.PI / 4; // one per log seat
-        const fx = -8.2 + Math.cos(a) * 1.5, fz = 6.6 + Math.sin(a) * 1.5;
+        // seat s -> log (s % 4), slot along the log (-1, 0, +1)
+        const a = ((s % 4) / 4) * Math.PI * 2 + Math.PI / 4;
+        const slot = Math.floor(s / 4) - 1;
+        const cx = -8.2 + Math.cos(a) * 1.5, cz = 6.6 + Math.sin(a) * 1.5;
+        const fx = cx + -Math.sin(a) * 0.38 * slot, fz = cz + Math.cos(a) * 0.38 * slot;
         p.position.set(fx, gy + 0.15, fz); // settled onto the log, legs tucked
         p.rotation.y = Math.atan2(-(6.6 - fz), -8.2 - fx); // facing the flames
         p.rotation.z = 0;
-        v.meeting = false;
-      } else {
-        v.idle = 0.6 + i * 0.7;
+        p.visible = true;
+        if (v.zone) v.meeting = false;
+      } else if (v.zone) {
+        v.idle = 0.6 + (s % 4) * 0.7;
         p.position.set(v.x, hAt(v.x, v.z), v.z);
+      } else {
+        p.visible = false; // the evening guests head home at dawn
       }
     });
   }
@@ -1155,7 +1179,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     }
     if (folkAtFire && !prefersReduced) {
       // fireside: seated, swapping stories — staggered nods around the circle
-      folk.forEach((p, i) => {
+      fireCircle.forEach((p, i) => {
         p.userData.head.position.y = 0.38 + Math.max(0, Math.sin(t * 1.8 + i * 1.7)) * 0.02;
         p.rotation.z = Math.sin(t * 1.1 + i) * 0.03;
       });
