@@ -261,6 +261,9 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   // terrain height: mostly flat, two gentle rises, a mound up to the dock,
   // a carved lake basin (east third) and level ground around the spring pool
   const LAKE = { x: 9.0, z: 1, r: 7.2 };
+  // the river's course (spring -> mill -> lake); shared by the mesh and the villagers' no-walk rules
+  const RIVER_PTS = [[-12.6, -6.7], [-10.5, -8.6], [-7.6, -10.8], [-4.9, -10.1], [-2.6, -8.3], [-0.3, -6.5], [1.9, -5.0], [3.9, -3.7], [5.6, -2.5]];
+  const obstacles = []; // {x,z,r} circles the villagers walk around, filled in as structures are built
   function hAt(x, z) {
     const r = Math.hypot(x, z);
     let y = Math.max(0, Math.cos(r * 0.12)) * 0.15
@@ -325,9 +328,11 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   const roofMat = new THREE.MeshStandardMaterial({ color: 0xD88C6A, flatShading: true, roughness: 1 });
   const roofMat2 = new THREE.MeshStandardMaterial({ color: 0x065F46, flatShading: true, roughness: 1 });
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x84603F, flatShading: true, roughness: 1 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xE8C39E, flatShading: true, roughness: 1 });
   const leafMats = [0x4F8F5C, 0x67A86B, 0x3E7B4E].map(c => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 1 }));
 
   function tree(g, x, z, s = 1) {
+    obstacles.push({ x, z, r: 0.5 * s });
     const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 1, 5), trunkMat);
     const y = hAt(x, z);
     tr.position.set(x, y + 0.5 * s, z); tr.scale.setScalar(s); g.add(tr);
@@ -337,6 +342,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   const doorMat = new THREE.MeshStandardMaterial({ color: 0x065F46 });
   const windowMat = new THREE.MeshStandardMaterial({ color: 0xBFDFE8, roughness: 0.2 });
   function house(g, x, z, ry = 0, s = 1, roof = roofMat) {
+    obstacles.push({ x, z, r: 1.15 * s });
     const grp = new THREE.Group();
     const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.1, 1.3), wallMat);
     body.position.y = 0.55; grp.add(body);
@@ -393,6 +399,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     }
     hall.position.set(0, hAt(0, -2), -2);
     gCommons.add(hall);
+    obstacles.push({ x: 0, z: -2, r: 2.25 });
     // the community allotment: six varied beds and a scarecrow
     const bedMat = new THREE.MeshStandardMaterial({ color: 0x7A5B3C, flatShading: true, roughness: 1 });
     const cropCols = [0x4F8F5C, 0xF4CE6A, 0xD88C6A, 0x67A86B, 0xA7D8C4, 0x3E7B4E];
@@ -401,6 +408,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const bed = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.22, 0.75), bedMat);
       bed.position.set(bx, hAt(bx, bz) + 0.12, bz);
       gCommons.add(bed);
+      obstacles.push({ x: bx, z: bz, r: 0.55 }); // the gardener goes round the beds, never through
       const cMat = new THREE.MeshStandardMaterial({ color: cropCols[bi++ % 6], flatShading: true, roughness: 1 });
       for (let p = 0; p < 4; p++) {
         const veg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11 + rand() * 0.05, 0), cMat);
@@ -409,6 +417,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       }
     }
     const scX = -4.2, scZ = -4.6, scY = hAt(scX, scZ);
+    obstacles.push({ x: scX, z: scZ, r: 0.35 });
     const scPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 5), woodMat);
     scPole.position.set(scX, scY + 0.55, scZ); gCommons.add(scPole);
     const scArm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.06), woodMat);
@@ -458,6 +467,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     fire.position.set(x0, gy, z0);
     gGather.add(fire);
     gGather.userData.flames = [flameO, flameI];
+    obstacles.push({ x: x0, z: z0, r: 1.85 }); // outside the seat ring
     const fireLight = new THREE.PointLight(0xFF9240, 1.4, 9, 1.8);
     fireLight.position.set(x0, gy + 0.8, z0);
     gGather.add(fireLight);
@@ -467,6 +477,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     const tbl = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.6), woodMat);
     tbl.position.set(tx, ty + 0.55, tz);
     gGather.add(tbl);
+    obstacles.push({ x: tx, z: tz, r: 1.7 });
     [-1, 1].forEach((side) => {
       const bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.07, 0.25), woodMat);
       bench.position.set(tx, ty + 0.34, tz + side * 0.55);
@@ -476,6 +487,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 5), woodMat);
       pole.position.set(x, hAt(x, z) + 1.1, z);
       gGather.add(pole);
+      obstacles.push({ x, z, r: 0.3 });
       const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32),
         new THREE.MeshBasicMaterial({ color: pi ? 0xF4CE6A : 0xA7D8C4, side: THREE.DoubleSide }));
       flag.position.set(x + 0.3, hAt(x, z) + 2.05, z);
@@ -500,12 +512,78 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     dockG.position.set(0.9, 0.1, 0.35);
     dockG.rotation.y = -0.25;
     gNetwork.add(dockG);
+    obstacles.push({ x: 2.0, z: 0.7, r: 1.3 }); // the landward end of the dock walkway
+    // a proper rowboat: pointed bow, cream interior inset below the gunwale rim,
+    // bench seats, shipped oars, and a fisher aboard with rod tackle for the lulls
     const boat = new THREE.Group();
-    const hull = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.65), woodMat);
-    hull.position.y = 0.15; boat.add(hull);
-    const inner = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.16, 0.4), wallMat);
-    inner.position.y = 0.3; boat.add(inner);
-    boat.position.set(7.4, 0.1, 4.6); boat.rotation.y = 0.6;
+    const hullShape = new THREE.Shape();
+    hullShape.moveTo(-0.78, 0);
+    hullShape.quadraticCurveTo(-0.62, 0.3, 0, 0.34);
+    hullShape.quadraticCurveTo(0.55, 0.3, 0.88, 0); // the point is the bow (+x)
+    hullShape.quadraticCurveTo(0.55, -0.3, 0, -0.34);
+    hullShape.quadraticCurveTo(-0.62, -0.3, -0.78, 0);
+    hullShape.closePath();
+    const hullGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 0.26, bevelEnabled: false });
+    hullGeo.rotateX(-Math.PI / 2);
+    boat.add(new THREE.Mesh(hullGeo, woodMat));
+    const innerGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 0.05, bevelEnabled: false });
+    innerGeo.rotateX(-Math.PI / 2);
+    const inner = new THREE.Mesh(innerGeo, wallMat);
+    inner.scale.set(0.72, 1, 0.62);
+    inner.position.y = 0.17;
+    boat.add(inner);
+    for (const bx of [-0.3, 0.25]) {
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.42), woodMat);
+      bench.position.set(bx, 0.24, 0);
+      boat.add(bench);
+    }
+    const fisher = new THREE.Group();
+    const fBody = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.22, 6),
+      new THREE.MeshStandardMaterial({ color: 0xC9A24B, flatShading: true, roughness: 1 }));
+    fBody.position.y = 0.12; fisher.add(fBody);
+    const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.075, 7, 6), skinMat);
+    fHead.position.y = 0.3; fisher.add(fHead);
+    fisher.position.set(-0.3, 0.25, 0);
+    boat.add(fisher);
+    const oars = [];
+    for (const side of [1, -1]) {
+      const oar = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.85, 5), woodMat);
+      shaft.rotation.x = Math.PI / 2;
+      shaft.position.z = 0.32;
+      oar.add(shaft);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.22), woodMat);
+      blade.position.z = 0.7;
+      oar.add(blade);
+      oar.position.set(0, 0.26, side * 0.28);
+      oar.scale.z = side;
+      oar.rotation.x = side * 0.5;
+      boat.add(oar);
+      oars.push(oar);
+    }
+    gNetwork.userData.oars = oars;
+    const tackle = new THREE.Group();
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.6, 5), woodMat);
+    rod.position.y = 0.3;
+    const rodG = new THREE.Group();
+    rodG.add(rod);
+    rodG.position.set(-0.15, 0.3, 0.1);
+    rodG.rotation.z = -0.9; // tip leans out over the bow
+    tackle.add(rodG);
+    tackle.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.32, 0.67, 0.1), new THREE.Vector3(0.72, 0.02, 0.1)]),
+      new THREE.LineBasicMaterial({ color: 0xDDD8C8 })
+    ));
+    const bobber = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5),
+      new THREE.MeshBasicMaterial({ color: 0xD88C6A }));
+    bobber.position.set(0.72, 0.02, 0.1);
+    tackle.add(bobber);
+    tackle.visible = false;
+    tackle.userData.bobber = bobber;
+    boat.add(tackle);
+    gNetwork.userData.tackle = tackle;
+    boat.position.set(6.3, 0.1, 3.2);
+    boat.rotation.y = -0.785; // facing out across the lake
     gNetwork.add(boat);
     gNetwork.userData.boat = boat;
     // the crossing itself: dock shore -> far-hamlet shore, all inside the lake
@@ -515,6 +593,15 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       new THREE.Vector3(8.5, 0.1, 5.4),
       new THREE.Vector3(9.5, 0.1, 6.7),
     ]);
+    // the day on the water: row out, fish a while mid-lake, row on, visit, row home, rest
+    gNetwork.userData.legs = [
+      [0, 10, 0, 0.5, 'row'],
+      [10, 26, 0.5, 0.5, 'fish'],
+      [26, 36, 0.5, 1, 'row'],
+      [36, 42, 1, 1, 'rest'],
+      [42, 52, 1, 0, 'row'],
+      [52, 56, 0, 0, 'rest'],
+    ];
   })();
 
   // the watermill beside the river
@@ -532,8 +619,10 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     towerM.add(mDoor);
     towerM.position.set(mx, hAt(mx, mz), mz);
     gMill.add(towerM);
+    obstacles.push({ x: mx, z: mz, r: 1.4 });
+    obstacles.push({ x: -13.6, z: -5.8, r: 2.4 }); // the spring pool
     // the river: from the spring pool, past the mill, into the lake
-    const sPts = [[-12.6, -6.7], [-10.5, -8.6], [-7.6, -10.8], [-4.9, -10.1], [-2.6, -8.3], [-0.3, -6.5], [1.9, -5.0], [3.9, -3.7], [5.6, -2.5]].map(([x, z]) => new THREE.Vector3(x, 0, z));
+    const sPts = RIVER_PTS.map(([x, z]) => new THREE.Vector3(x, 0, z));
     const sCurve = new THREE.CatmullRomCurve3(sPts);
     const SEGS = 80;
     const rPos = [], rIdx = [];
@@ -646,37 +735,52 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     gParty.userData.butterflies = butterflies;
   })();
 
-  // ---------- villagers : little folk strolling their daily loops ----------
+  // ---------- villagers : little folk wandering freely, walking around things ----------
   const gFolk = stageGroup();
   const folk = [];
-  (function () {
-    const skinMat = new THREE.MeshStandardMaterial({ color: 0xE8C39E, flatShading: true, roughness: 1 });
+  {
     const folkCols = [0x065F46, 0xD88C6A, 0xF4CE6A, 0x4E6E8E];
-    const routes = [
-      // hall door -> the green -> near the homes -> back
-      { pts: [[0, -0.7], [1.2, 1.6], [0.9, 4.4], [-0.6, 2.6]], sp: 0.5 },
-      // allotment rounds: along the beds, down the gaps between them
-      { pts: [[-6.8, -2.3], [-4.0, -2.3], [-4.6, -3.65], [-6.2, -3.65]], sp: 0.42 },
-      // firepit -> under the bunting -> the long table -> back
-      { pts: [[-6.9, 7.6], [-5.4, 9.0], [-2.7, 10.5], [-4.8, 8.2]], sp: 0.55 },
-      // a neighbour pottering around the far hamlet
-      { pts: [[8.4, 10.4], [10.4, 10.6], [9.9, 12.6]], sp: 0.4 },
+    // each villager roams a home patch; patches keep them off the river, lake and rim
+    const zones = [
+      { cx: 0, cz: 2, R: 5.0, sx: 0, sz: 2, sp: 0.55 },          // the village green
+      { cx: -5.4, cz: -3.2, R: 2.8, sx: -5.4, sz: -2.2, sp: 0.4 }, // the allotment
+      { cx: -4.5, cz: 9, R: 4.5, sx: -5.0, sz: 8.4, sp: 0.5 },   // the gathering green
+      { cx: 9.3, cz: 11.2, R: 2.4, sx: 9.6, sz: 10.2, sp: 0.4 }, // the far hamlet
     ];
-    routes.forEach((r, i) => {
+    const walkableAt = (x, z) =>
+      Math.hypot(x, z) < 16
+      && Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 0.5
+      && RIVER_PTS.every(([rx, rz]) => Math.hypot(x - rx, z - rz) > 1.35);
+    // the whole straight path must clear every obstacle circle, not just the endpoints
+    const segClear = (ax, az, bx, bz) => obstacles.every((o) => {
+      const dx = bx - ax, dz = bz - az;
+      const L2 = dx * dx + dz * dz || 1e-6;
+      const u = Math.max(0, Math.min(1, ((o.x - ax) * dx + (o.z - az) * dz) / L2));
+      return Math.hypot(ax + dx * u - o.x, az + dz * u - o.z) > o.r + 0.2;
+    });
+    gFolk.userData.pickTarget = function (v) {
+      for (let i = 0; i < 24; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const rr = 0.6 + Math.random() * (v.zone.R - 0.6);
+        const x = v.zone.cx + Math.cos(a) * rr, z = v.zone.cz + Math.sin(a) * rr;
+        let ok = walkableAt(x, z) && segClear(v.x, v.z, x, z);
+        for (let s = 0.25; ok && s < 1; s += 0.25) ok = walkableAt(v.x + (x - v.x) * s, v.z + (z - v.z) * s);
+        if (ok) { v.tx = x; v.tz = z; return true; }
+      }
+      return false;
+    };
+    zones.forEach((zone, i) => {
       const p = new THREE.Group();
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.3, 6),
         new THREE.MeshStandardMaterial({ color: folkCols[i], flatShading: true, roughness: 1 }));
       body.position.y = 0.15; p.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
       head.position.y = 0.38; p.add(head);
-      const pts = r.pts.map(([x, z]) => new THREE.Vector2(x, z));
-      const segs = pts.map((v, k) => v.distanceTo(pts[(k + 1) % pts.length]));
-      const total = segs.reduce((s, v) => s + v, 0);
-      p.userData = { pts, segs, total, d: rand() * total, sp: r.sp, ph: rand() * Math.PI * 2 };
-      p.position.set(pts[0].x, hAt(pts[0].x, pts[0].y), pts[0].y);
+      p.userData = { zone, sp: zone.sp, x: zone.sx, z: zone.sz, tx: zone.sx, tz: zone.sz, idle: 0.5 + i * 0.8, ph: rand() * Math.PI * 2 };
+      p.position.set(zone.sx, hAt(zone.sx, zone.sz), zone.sz);
       gFolk.add(p); folk.push(p);
     });
-  })();
+  }
 
   // ---------- clouds ----------
   const cloudMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.95 });
@@ -951,31 +1055,53 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     });
     const boat = gNetwork.userData.boat;
     if (boat && !prefersReduced) {
-      // 32s round trip: row across, rest at the far shore, row home, rest
-      const cyc = t % 32;
-      let bu, bdir = 1;
-      if (cyc < 12) bu = ease(cyc / 12);
-      else if (cyc < 16) bu = 1;
-      else if (cyc < 28) { bu = 1 - ease((cyc - 16) / 12); bdir = -1; }
-      else bu = 0;
+      // 56s day on the water, with a fishing stop mid-lake
+      const cyc = t % 56;
+      let bu = 0, bmode = 'rest', bdir = 1;
+      for (const [l0, l1, u0, u1, m] of gNetwork.userData.legs) {
+        if (cyc >= l0 && cyc < l1) {
+          bu = u0 + (u1 - u0) * ease((cyc - l0) / (l1 - l0));
+          bmode = m; bdir = u1 >= u0 ? 1 : -1;
+          break;
+        }
+      }
       const rp = gNetwork.userData.route.getPointAt(bu);
-      const rtg = gNetwork.userData.route.getTangentAt(Math.min(Math.max(bu, 0.01), 0.99));
       boat.position.set(rp.x, 0.1 + Math.sin(t * 0.9) * 0.035, rp.z);
-      boat.rotation.y = Math.atan2(-rtg.z * bdir, rtg.x * bdir);
       boat.rotation.z = Math.sin(t * 0.7) * 0.04;
+      const rowing = bmode === 'row';
+      if (rowing) {
+        const rtg = gNetwork.userData.route.getTangentAt(Math.min(Math.max(bu, 0.01), 0.99));
+        boat.rotation.y = Math.atan2(-rtg.z * bdir, rtg.x * bdir);
+      }
+      gNetwork.userData.oars.forEach((o, oi) => {
+        const side = oi ? -1 : 1;
+        o.rotation.y = rowing ? Math.sin(t * 2.6) * 0.45 : 0.85; // sweep, or shipped aft
+        o.rotation.x = side * (rowing ? 0.5 + Math.sin(t * 2.6 + Math.PI / 2) * 0.18 : 0.2);
+      });
+      const tackle = gNetwork.userData.tackle;
+      tackle.visible = bmode === 'fish';
+      if (tackle.visible) tackle.userData.bobber.position.y = 0.02 + Math.sin(t * 2.2) * 0.025;
     }
     if (gFolk.visible && !prefersReduced) {
       for (const p of folk) {
         const v = p.userData;
-        v.d = (v.d + dt * v.sp) % v.total;
-        let d = v.d, k = 0;
-        while (d > v.segs[k]) { d -= v.segs[k]; k = (k + 1) % v.pts.length; }
-        const pa = v.pts[k], pb = v.pts[(k + 1) % v.pts.length];
-        const fw = d / v.segs[k];
-        const x = pa.x + (pb.x - pa.x) * fw, z = pa.y + (pb.y - pa.y) * fw;
-        p.position.set(x, hAt(x, z) + Math.abs(Math.sin(t * 7 + v.ph)) * 0.02, z);
-        p.rotation.y = Math.atan2(-(pb.y - pa.y), pb.x - pa.x);
-        p.rotation.z = Math.sin(t * 7 + v.ph) * 0.05;
+        if (v.idle > 0) {
+          v.idle -= dt;
+          p.rotation.z = Math.sin(t * 1.2 + v.ph) * 0.03; // standing, looking about
+          if (v.idle <= 0 && !gFolk.userData.pickTarget(v)) v.idle = 1.5 + Math.random() * 2;
+        } else {
+          const dx = v.tx - v.x, dz = v.tz - v.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < 0.07) {
+            v.idle = 1 + Math.random() * 5;
+          } else {
+            const step = Math.min(dist, v.sp * dt);
+            v.x += (dx / dist) * step; v.z += (dz / dist) * step;
+            p.rotation.y = Math.atan2(-dz, dx);
+            p.rotation.z = Math.sin(t * 7 + v.ph) * 0.05;
+            p.position.set(v.x, hAt(v.x, v.z) + Math.abs(Math.sin(t * 7 + v.ph)) * 0.02, v.z);
+          }
+        }
       }
     }
     if (fireflies.visible) {
