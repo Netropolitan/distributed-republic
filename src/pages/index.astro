@@ -288,11 +288,22 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   table.add(lawn);
 
   // ---------- the lake ----------
+  // a gridded disc (not CircleGeometry) so the surface has vertices to ripple
+  const lakeGeo = new THREE.PlaneGeometry(LAKE.r * 2, LAKE.r * 2, 22, 22);
+  lakeGeo.rotateX(-Math.PI / 2);
+  {
+    const lp = lakeGeo.attributes.position;
+    for (let i = 0; i < lp.count; i++) {
+      const x = lp.getX(i), z = lp.getZ(i);
+      const r = Math.hypot(x, z);
+      if (r > LAKE.r) { const s = LAKE.r / r; lp.setX(i, x * s); lp.setZ(i, z * s); }
+    }
+  }
+  const lakeBase = lakeGeo.attributes.position.array.slice();
   const lakeMesh = new THREE.Mesh(
-    new THREE.CircleGeometry(LAKE.r, 48),
+    lakeGeo,
     new THREE.MeshStandardMaterial({ color: 0x8FC8D8, flatShading: true, roughness: 0.25 })
   );
-  lakeMesh.rotation.x = -Math.PI / 2;
   lakeMesh.position.set(LAKE.x, 0.1, LAKE.z);
   table.add(lakeMesh);
   for (let i = 0; i < 12; i++) {
@@ -366,6 +377,9 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     r.rotation.y = Math.PI / 2;
     r.position.y = 1.7;
     hall.add(r);
+    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.55, 0.26), wallMat);
+    chimney.position.set(1.05, 2.78, 0); // sunk into the ridge, poking just above it
+    hall.add(chimney);
     const hallDoor = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.0), doorMat);
     hallDoor.position.set(0, 0.5, 1.21); hall.add(hallDoor);
     for (const wx of [-1.2, 1.2]) {
@@ -443,6 +457,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     }
     fire.position.set(x0, gy, z0);
     gGather.add(fire);
+    gGather.userData.flames = [flameO, flameI];
     const fireLight = new THREE.PointLight(0xFF9240, 1.4, 9, 1.8);
     fireLight.position.set(x0, gy + 0.8, z0);
     gGather.add(fireLight);
@@ -566,6 +581,19 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     wheel.rotation.y = -0.66;
     gMill.add(wheel);
     gMill.userData.wheel = wheel;
+    // foam flecks drifting downstream sell the flow the wheel implies
+    const foamMat = new THREE.MeshBasicMaterial({ color: 0xEAF7F4, transparent: true, opacity: 0.75 });
+    const flow = [];
+    for (let i = 0; i < 12; i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.05, 5, 4), foamMat);
+      m.scale.y = 0.35;
+      m.userData = { u: i / 12, sp: 0.038 + (i % 3) * 0.007, off: (rand() - 0.5) * 1.1 };
+      if (prefersReduced) m.visible = false;
+      gMill.add(m);
+      flow.push(m);
+    }
+    gMill.userData.flow = flow;
+    gMill.userData.curve = sCurve;
     const axle = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.1), woodMat);
     axle.position.set(-5.2, hAt(-4.5, -10.0) + 0.9, -9.0);
     axle.rotation.y = 0.96;
@@ -629,6 +657,23 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     scene.add(g); clouds.push(g);
   }
 
+  // ---------- smoke : firepit + hall chimney ----------
+  function smokePlume(x, y, z, n, scale0, rise) {
+    const puffs = [];
+    for (let i = 0; i < n; i++) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xBDB7AA, transparent: true, opacity: 0, depthWrite: false });
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), mat);
+      const life = 2.6 + rand() * 1.4;
+      m.userData = { x, y, z, age: rand() * life, life, drift: rand() * Math.PI * 2, scale0, rise };
+      table.add(m); puffs.push(m);
+    }
+    return puffs;
+  }
+  const smoke = prefersReduced ? [] : [
+    ...smokePlume(-8.2, hAt(-8.2, 6.6) + 0.75, 6.6, 5, 0.16, 1.9),
+    ...smokePlume(1.05, hAt(0, -2) + 3.1, -2, 4, 0.12, 1.5),
+  ];
+
   // ---------- night mode : the dark-mode toggle turns the village to dusk ----------
   let seed2 = 41;
   const rand2 = () => { seed2 = (seed2 * 16807) % 2147483647; return seed2 / 2147483647; };
@@ -678,26 +723,34 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   embers.visible = false;
   table.add(embers);
 
-  let isNight = false;
+  // dusk falls as a tween, not a switch: the toggle sets a target and the
+  // animate loop eases nightT toward it, lerping every colour and light
+  const dayCol = { bg: new THREE.Color(0xF3EEE1), hemi: new THREE.Color(0xFFFBEA), ground: new THREE.Color(0xCBDCC4), sun: new THREE.Color(0xFFF2CE), cloud: new THREE.Color(0xFFFFFF) };
+  const nightCol = { bg: new THREE.Color(0x07211B), hemi: new THREE.Color(0x2E4A40), ground: new THREE.Color(0x0A1F18), sun: new THREE.Color(0x9FC4D8) /* moonlight */, cloud: new THREE.Color(0x3A4A44) };
+  windowMat.emissive.set(0xFFC97A);
+  windowMat.emissiveIntensity = 0;
+  const mix = (d, n, k) => d + (n - d) * k;
+  let nightTarget = 0, nightT = -1; // -1 = before first apply
+  function applyNight(k) {
+    scene.background.lerpColors(dayCol.bg, nightCol.bg, k);
+    hemi.color.lerpColors(dayCol.hemi, nightCol.hemi, k);
+    hemi.groundColor.lerpColors(dayCol.ground, nightCol.ground, k);
+    hemi.intensity = mix(1.2, 0.35, k);
+    sun.color.lerpColors(dayCol.sun, nightCol.sun, k);
+    sun.intensity = mix(1.4, 0.5, k);
+    fillL.intensity = mix(0.45, 0.12, k);
+    windowMat.emissiveIntensity = 0.85 * k;
+    cloudMat.color.lerpColors(dayCol.cloud, nightCol.cloud, k);
+    cloudMat.opacity = mix(0.95, 0.4, k);
+    stars.visible = k > 0.02;
+    starMat.opacity = 0.85 * k;
+    fireflies.visible = k > 0.3;
+    embers.visible = k > 0.3;
+    gParty.userData.butterflies.forEach((b) => { b.visible = k < 0.5; }); // butterflies roost at night
+  }
   function setNight(on) {
-    if (on === isNight) return;
-    isNight = on;
-    scene.background.set(on ? 0x07211B : 0xF3EEE1);
-    hemi.color.set(on ? 0x2E4A40 : 0xFFFBEA);
-    hemi.groundColor.set(on ? 0x0A1F18 : 0xCBDCC4);
-    hemi.intensity = on ? 0.35 : 1.2;
-    sun.color.set(on ? 0x9FC4D8 : 0xFFF2CE); // moonlight
-    sun.intensity = on ? 0.5 : 1.4;
-    fillL.intensity = on ? 0.12 : 0.45;
-    windowMat.emissive.set(on ? 0xFFC97A : 0x000000);
-    windowMat.emissiveIntensity = on ? 0.85 : 0;
-    cloudMat.color.set(on ? 0x3A4A44 : 0xFFFFFF);
-    cloudMat.opacity = on ? 0.4 : 0.95;
-    if (gGather.userData.fireLight) gGather.userData.fireLight.intensity = on ? 2.6 : 1.4;
-    stars.visible = on;
-    fireflies.visible = on;
-    embers.visible = on;
-    gParty.userData.butterflies.forEach((b) => { b.visible = !on; }); // butterflies roost at night
+    nightTarget = on ? 1 : 0;
+    if (nightT < 0 || prefersReduced) { nightT = nightTarget; applyNight(nightT); }
   }
   new MutationObserver(() => setNight(document.documentElement.classList.contains('axs-dark-mode')))
     .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -749,9 +802,16 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
     t += dt;
-    if (!prefersReduced) { smx += (mx - smx) * 0.03; smy += (my - smy) * 0.03; }
+    // exp(-dt·k) smoothing is frame-rate independent (per-frame factors run 2x fast at 120Hz)
+    if (!prefersReduced) { const pk = 1 - Math.exp(-dt * 1.8); smx += (mx - smx) * pk; smy += (my - smy) * pk; }
 
-    smoothP += (tourProgress() - smoothP) * (prefersReduced ? 1 : 0.055);
+    smoothP += (tourProgress() - smoothP) * (prefersReduced ? 1 : 1 - Math.exp(-dt * 3.3));
+
+    if (Math.abs(nightTarget - nightT) > 0.001) {
+      nightT += (nightTarget - nightT) * (1 - Math.exp(-dt * 2.4));
+      if (Math.abs(nightTarget - nightT) <= 0.001) nightT = nightTarget;
+      applyNight(nightT);
+    }
     const i0 = Math.floor(smoothP);
     const i1 = Math.min(i0 + 1, FOCI.length - 1);
     const f = ease(smoothP - i0);
@@ -777,6 +837,49 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
 
     // life in the model
     if (gMill.userData.wheel) gMill.userData.wheel.rotation.z = t * 0.7;
+    if (!prefersReduced) {
+      // lake ripple (gentle, so the waterline laps rather than waves)
+      const lkp = lakeGeo.attributes.position;
+      for (let i = 0; i < lkp.count; i++) {
+        const x = lakeBase[i * 3], z = lakeBase[i * 3 + 2];
+        lkp.setY(i, Math.sin(x * 1.4 + t * 0.9) * 0.022 + Math.sin(z * 1.7 - t * 0.7) * 0.018);
+      }
+      lkp.needsUpdate = true;
+      lakeGeo.computeVertexNormals();
+      // foam drifting downstream
+      for (const m of gMill.userData.flow) {
+        const u = m.userData.u = (m.userData.u + dt * m.userData.sp) % 1;
+        const p = gMill.userData.curve.getPointAt(u);
+        const tng = gMill.userData.curve.getTangentAt(u);
+        const w = (0.45 + u * 0.45) * 0.6 * m.userData.off;
+        let fy = hAt(p.x, p.z) + 0.1;
+        const fdp = Math.hypot(p.x + 13.6, p.z + 5.8);
+        if (fdp < 1.9) fy = Math.min(fy, 0.105); // match the river's dip under the pool
+        m.position.set(p.x - tng.z * w, fy, p.z + tng.x * w);
+      }
+      // fire flicker
+      const fl = gGather.userData.flames;
+      fl[0].scale.y = 1 + Math.sin(t * 7.3) * 0.1 + Math.sin(t * 13.7) * 0.05;
+      fl[1].scale.y = 1 + Math.sin(t * 9.1 + 1.2) * 0.13;
+      // smoke puffs: rise, swell, fade, respawn (fainter at night, embers take over)
+      for (const m of smoke) {
+        const s = m.userData;
+        s.age += dt;
+        if (s.age > s.life) { s.age = 0; s.drift = Math.random() * Math.PI * 2; }
+        const u = s.age / s.life;
+        m.position.set(
+          s.x + Math.sin(t * 0.6 + s.drift) * 0.1 + u * 0.5,
+          s.y + u * s.rise,
+          s.z + Math.cos(t * 0.5 + s.drift) * 0.08
+        );
+        m.scale.setScalar(s.scale0 * (0.6 + u * 1.8));
+        m.material.opacity = Math.sin(Math.min(u * 3, 1) * Math.PI / 2) * 0.32 * (1 - u) * (1 - nightT * 0.45);
+      }
+    }
+    if (gGather.userData.fireLight) {
+      gGather.userData.fireLight.intensity = mix(1.4, 2.6, Math.max(nightT, 0))
+        * (prefersReduced ? 1 : 1 + Math.sin(t * 11) * 0.05 + Math.sin(t * 5.3 + 2) * 0.05);
+    }
     gParty.userData.butterflies.forEach((b) => {
       if (!b.visible) return;
       const u = b.userData;
@@ -795,7 +898,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
         fp.array[i * 3 + 1] += Math.sin(t * 0.6 + ffSeed[i] * 1.7) * 0.005;
       }
       fp.needsUpdate = true;
-      ffMat.opacity = 0.5 + Math.sin(t * 1.4) * 0.35;
+      ffMat.opacity = (0.5 + Math.sin(t * 1.4) * 0.35) * nightT;
     }
     if (embers.visible) {
       const ep = embGeo.attributes.position;
@@ -810,7 +913,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
         }
       }
       ep.needsUpdate = true;
-      embMat.opacity = 0.55 + Math.sin(t * 6.5) * 0.2;
+      embMat.opacity = (0.55 + Math.sin(t * 6.5) * 0.2) * nightT;
     }
     clouds.forEach((c) => {
       c.userData.a += dt * 0.012;
