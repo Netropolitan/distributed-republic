@@ -898,6 +898,35 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   embers.visible = false;
   table.add(embers);
 
+  // at night the villagers gather on the log seats around the fire;
+  // by day they go back to wandering from wherever they left off
+  let folkAtFire = false;
+  function setFolkFire(on) {
+    folkAtFire = on;
+    if (meet.phase !== 'wait') {
+      for (const idx of [meet.a, meet.b]) {
+        folk[idx].userData.meeting = false;
+        folk[idx].userData.head.position.y = 0.38;
+      }
+      meet.phase = 'wait'; meet.timer = 12;
+    }
+    const gy = hAt(-8.2, 6.6);
+    folk.forEach((p, i) => {
+      const v = p.userData;
+      if (on) {
+        const a = (i / folk.length) * Math.PI * 2 + Math.PI / 4; // one per log seat
+        const fx = -8.2 + Math.cos(a) * 1.5, fz = 6.6 + Math.sin(a) * 1.5;
+        p.position.set(fx, gy + 0.15, fz); // settled onto the log, legs tucked
+        p.rotation.y = Math.atan2(-(6.6 - fz), -8.2 - fx); // facing the flames
+        p.rotation.z = 0;
+        v.meeting = false;
+      } else {
+        v.idle = 0.6 + i * 0.7;
+        p.position.set(v.x, hAt(v.x, v.z), v.z);
+      }
+    });
+  }
+
   // dusk falls as a tween, not a switch: the toggle sets a target and the
   // animate loop eases nightT toward it, lerping every colour and light
   const dayCol = { bg: new THREE.Color(0xF3EEE1), hemi: new THREE.Color(0xFFFBEA), ground: new THREE.Color(0xCBDCC4), sun: new THREE.Color(0xFFF2CE), cloud: new THREE.Color(0xFFFFFF) };
@@ -922,7 +951,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     fireflies.visible = k > 0.3;
     embers.visible = k > 0.3;
     gParty.userData.butterflies.forEach((b) => { b.visible = k < 0.5; }); // butterflies roost at night
-    gFolk.visible = k < 0.5; // the villagers head indoors (lit windows take over)
+    if ((k >= 0.5) !== folkAtFire) setFolkFire(k >= 0.5); // dusk: everyone gathers at the fire
   }
   function setNight(on) {
     nightTarget = on ? 1 : 0;
@@ -1124,7 +1153,14 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       tk.bobMat.opacity = fm;
       if (fm > 0.02) tk.bobber.position.y = 0.02 + Math.sin(t * 2.2) * 0.025;
     }
-    if (gFolk.visible && !prefersReduced) {
+    if (folkAtFire && !prefersReduced) {
+      // fireside: seated, swapping stories — staggered nods around the circle
+      folk.forEach((p, i) => {
+        p.userData.head.position.y = 0.38 + Math.max(0, Math.sin(t * 1.8 + i * 1.7)) * 0.02;
+        p.rotation.z = Math.sin(t * 1.1 + i) * 0.03;
+      });
+    }
+    if (!folkAtFire && !prefersReduced) {
       meet.timer -= dt;
       if (meet.phase === 'wait' && meet.timer <= 0) {
         const pairs = [[0, 1], [0, 2], [1, 2]];
