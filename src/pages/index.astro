@@ -1107,10 +1107,12 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       gNetwork.userData.oars.forEach((o, oi) => {
         const side = oi ? -1 : 1;
         // a real stroke, not an orbit: blade dipped while pulling aft,
-        // lifted while swinging forward (lift follows the sweep's direction)
+        // lifted while swinging forward (lift follows the sweep's direction).
+        // the starboard oar is a scale-mirrored copy, so its yaw must be
+        // negated (side factor) for both oars to sweep the SAME way together
         const th = t * 2.2;
         const lift = Math.max(0, Math.cos(th)); // cos>0 = moving forward = blade out
-        o.rotation.y = 0.85 * (1 - rm) + Math.sin(th) * 0.45 * rm;
+        o.rotation.y = side * (-0.85 * (1 - rm) + Math.sin(th) * 0.45 * rm);
         o.rotation.x = side * (0.2 * (1 - rm) + (0.55 - 0.35 * lift) * rm);
       });
       // the rod raises and the line fades in, easing in and out of the fishing stop
