@@ -1106,8 +1106,12 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const rm = gNetwork.userData.rowMix;
       gNetwork.userData.oars.forEach((o, oi) => {
         const side = oi ? -1 : 1;
-        o.rotation.y = 0.85 * (1 - rm) + Math.sin(t * 2.2) * 0.45 * rm;
-        o.rotation.x = side * (0.2 * (1 - rm) + (0.5 + Math.sin(t * 2.2 + Math.PI / 2) * 0.18) * rm);
+        // a real stroke, not an orbit: blade dipped while pulling aft,
+        // lifted while swinging forward (lift follows the sweep's direction)
+        const th = t * 2.2;
+        const lift = Math.max(0, Math.cos(th)); // cos>0 = moving forward = blade out
+        o.rotation.y = 0.85 * (1 - rm) + Math.sin(th) * 0.45 * rm;
+        o.rotation.x = side * (0.2 * (1 - rm) + (0.55 - 0.35 * lift) * rm);
       });
       // the rod raises and the line fades in, easing in and out of the fishing stop
       gNetwork.userData.fishMix += ((bmode === 'fish' ? 1 : 0) - gNetwork.userData.fishMix) * (1 - Math.exp(-dt * 1.8));
