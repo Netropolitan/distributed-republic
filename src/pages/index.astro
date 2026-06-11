@@ -261,6 +261,9 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   // terrain height: mostly flat, two gentle rises, a mound up to the dock,
   // a carved lake basin (east third) and level ground around the spring pool
   const LAKE = { x: 9.0, z: 1, r: 7.2 };
+  // the river's course (spring -> mill -> lake); shared by the mesh and the villagers' no-walk rules
+  const RIVER_PTS = [[-12.6, -6.7], [-10.5, -8.6], [-7.6, -10.8], [-4.9, -10.1], [-2.6, -8.3], [-0.3, -6.5], [1.9, -5.0], [3.9, -3.7], [5.6, -2.5]];
+  const obstacles = []; // {x,z,r} circles the villagers walk around, filled in as structures are built
   function hAt(x, z) {
     const r = Math.hypot(x, z);
     let y = Math.max(0, Math.cos(r * 0.12)) * 0.15
@@ -288,11 +291,22 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   table.add(lawn);
 
   // ---------- the lake ----------
+  // a gridded disc (not CircleGeometry) so the surface has vertices to ripple
+  const lakeGeo = new THREE.PlaneGeometry(LAKE.r * 2, LAKE.r * 2, 22, 22);
+  lakeGeo.rotateX(-Math.PI / 2);
+  {
+    const lp = lakeGeo.attributes.position;
+    for (let i = 0; i < lp.count; i++) {
+      const x = lp.getX(i), z = lp.getZ(i);
+      const r = Math.hypot(x, z);
+      if (r > LAKE.r) { const s = LAKE.r / r; lp.setX(i, x * s); lp.setZ(i, z * s); }
+    }
+  }
+  const lakeBase = lakeGeo.attributes.position.array.slice();
   const lakeMesh = new THREE.Mesh(
-    new THREE.CircleGeometry(LAKE.r, 48),
+    lakeGeo,
     new THREE.MeshStandardMaterial({ color: 0x8FC8D8, flatShading: true, roughness: 0.25 })
   );
-  lakeMesh.rotation.x = -Math.PI / 2;
   lakeMesh.position.set(LAKE.x, 0.1, LAKE.z);
   table.add(lakeMesh);
   for (let i = 0; i < 12; i++) {
@@ -314,9 +328,11 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   const roofMat = new THREE.MeshStandardMaterial({ color: 0xD88C6A, flatShading: true, roughness: 1 });
   const roofMat2 = new THREE.MeshStandardMaterial({ color: 0x065F46, flatShading: true, roughness: 1 });
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x84603F, flatShading: true, roughness: 1 });
+  const skinMat = new THREE.MeshStandardMaterial({ color: 0xE8C39E, flatShading: true, roughness: 1 });
   const leafMats = [0x4F8F5C, 0x67A86B, 0x3E7B4E].map(c => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 1 }));
 
   function tree(g, x, z, s = 1) {
+    obstacles.push({ x, z, r: 0.5 * s });
     const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 1, 5), trunkMat);
     const y = hAt(x, z);
     tr.position.set(x, y + 0.5 * s, z); tr.scale.setScalar(s); g.add(tr);
@@ -326,6 +342,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   const doorMat = new THREE.MeshStandardMaterial({ color: 0x065F46 });
   const windowMat = new THREE.MeshStandardMaterial({ color: 0xBFDFE8, roughness: 0.2 });
   function house(g, x, z, ry = 0, s = 1, roof = roofMat) {
+    obstacles.push({ x, z, r: 1.15 * s });
     const grp = new THREE.Group();
     const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.1, 1.3), wallMat);
     body.position.y = 0.55; grp.add(body);
@@ -366,6 +383,9 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     r.rotation.y = Math.PI / 2;
     r.position.y = 1.7;
     hall.add(r);
+    const chimney = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.55, 0.26), wallMat);
+    chimney.position.set(1.05, 2.78, 0); // sunk into the ridge, poking just above it
+    hall.add(chimney);
     const hallDoor = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.0), doorMat);
     hallDoor.position.set(0, 0.5, 1.21); hall.add(hallDoor);
     for (const wx of [-1.2, 1.2]) {
@@ -379,6 +399,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     }
     hall.position.set(0, hAt(0, -2), -2);
     gCommons.add(hall);
+    obstacles.push({ x: 0, z: -2, r: 2.25 });
     // the community allotment: six varied beds and a scarecrow
     const bedMat = new THREE.MeshStandardMaterial({ color: 0x7A5B3C, flatShading: true, roughness: 1 });
     const cropCols = [0x4F8F5C, 0xF4CE6A, 0xD88C6A, 0x67A86B, 0xA7D8C4, 0x3E7B4E];
@@ -387,6 +408,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const bed = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.22, 0.75), bedMat);
       bed.position.set(bx, hAt(bx, bz) + 0.12, bz);
       gCommons.add(bed);
+      obstacles.push({ x: bx, z: bz, r: 0.55 }); // the gardener goes round the beds, never through
       const cMat = new THREE.MeshStandardMaterial({ color: cropCols[bi++ % 6], flatShading: true, roughness: 1 });
       for (let p = 0; p < 4; p++) {
         const veg = new THREE.Mesh(new THREE.IcosahedronGeometry(0.11 + rand() * 0.05, 0), cMat);
@@ -395,6 +417,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       }
     }
     const scX = -4.2, scZ = -4.6, scY = hAt(scX, scZ);
+    obstacles.push({ x: scX, z: scZ, r: 0.35 });
     const scPole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.1, 5), woodMat);
     scPole.position.set(scX, scY + 0.55, scZ); gCommons.add(scPole);
     const scArm = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.06), woodMat);
@@ -443,6 +466,8 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     }
     fire.position.set(x0, gy, z0);
     gGather.add(fire);
+    gGather.userData.flames = [flameO, flameI];
+    obstacles.push({ x: x0, z: z0, r: 1.85 }); // outside the seat ring
     const fireLight = new THREE.PointLight(0xFF9240, 1.4, 9, 1.8);
     fireLight.position.set(x0, gy + 0.8, z0);
     gGather.add(fireLight);
@@ -452,6 +477,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     const tbl = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.6), woodMat);
     tbl.position.set(tx, ty + 0.55, tz);
     gGather.add(tbl);
+    obstacles.push({ x: tx, z: tz, r: 1.7 });
     [-1, 1].forEach((side) => {
       const bench = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.07, 0.25), woodMat);
       bench.position.set(tx, ty + 0.34, tz + side * 0.55);
@@ -461,6 +487,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.2, 5), woodMat);
       pole.position.set(x, hAt(x, z) + 1.1, z);
       gGather.add(pole);
+      obstacles.push({ x, z, r: 0.3 });
       const flag = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.32),
         new THREE.MeshBasicMaterial({ color: pi ? 0xF4CE6A : 0xA7D8C4, side: THREE.DoubleSide }));
       flag.position.set(x + 0.3, hAt(x, z) + 2.05, z);
@@ -485,14 +512,101 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     dockG.position.set(0.9, 0.1, 0.35);
     dockG.rotation.y = -0.25;
     gNetwork.add(dockG);
+    obstacles.push({ x: 2.0, z: 0.7, r: 1.3 }); // the landward end of the dock walkway
+    // a proper rowboat: pointed bow, cream interior inset below the gunwale rim,
+    // bench seats, shipped oars, and a fisher aboard with rod tackle for the lulls
     const boat = new THREE.Group();
-    const hull = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.3, 0.65), woodMat);
-    hull.position.y = 0.15; boat.add(hull);
-    const inner = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.16, 0.4), wallMat);
-    inner.position.y = 0.3; boat.add(inner);
-    boat.position.set(7.4, 0.1, 4.6); boat.rotation.y = 0.6;
+    const hullShape = new THREE.Shape();
+    hullShape.moveTo(-0.78, 0);
+    hullShape.quadraticCurveTo(-0.62, 0.3, 0, 0.34);
+    hullShape.quadraticCurveTo(0.55, 0.3, 0.88, 0); // the point is the bow (+x)
+    hullShape.quadraticCurveTo(0.55, -0.3, 0, -0.34);
+    hullShape.quadraticCurveTo(-0.62, -0.3, -0.78, 0);
+    hullShape.closePath();
+    const hullGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 0.26, bevelEnabled: false });
+    hullGeo.rotateX(-Math.PI / 2);
+    boat.add(new THREE.Mesh(hullGeo, woodMat));
+    const innerGeo = new THREE.ExtrudeGeometry(hullShape, { depth: 0.05, bevelEnabled: false });
+    innerGeo.rotateX(-Math.PI / 2);
+    const inner = new THREE.Mesh(innerGeo, wallMat);
+    inner.scale.set(0.72, 1, 0.62);
+    inner.position.y = 0.17;
+    boat.add(inner);
+    for (const bx of [-0.3, 0.25]) {
+      const bench = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.03, 0.42), woodMat);
+      bench.position.set(bx, 0.24, 0);
+      boat.add(bench);
+    }
+    const fisher = new THREE.Group();
+    const fBody = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.22, 6),
+      new THREE.MeshStandardMaterial({ color: 0x22A06B, flatShading: true, roughness: 1 })); // green top against the wood hull
+    fBody.position.y = 0.12; fisher.add(fBody);
+    const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.075, 7, 6), skinMat);
+    fHead.position.y = 0.3; fisher.add(fHead);
+    fisher.position.set(-0.3, 0.25, 0);
+    boat.add(fisher);
+    const oars = [];
+    for (const side of [1, -1]) {
+      const oar = new THREE.Group();
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.85, 5), woodMat);
+      shaft.rotation.x = Math.PI / 2;
+      shaft.position.z = 0.32;
+      oar.add(shaft);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.02, 0.22), woodMat);
+      blade.position.z = 0.7;
+      oar.add(blade);
+      oar.position.set(0, 0.26, side * 0.28);
+      oar.scale.z = side;
+      oar.rotation.x = side * 0.5;
+      boat.add(oar);
+      oars.push(oar);
+    }
+    gNetwork.userData.oars = oars;
+    // the rod stays aboard, lying low over the stern; it raises to fish and the
+    // line + float fade in with it — no pop between states
+    const tackle = new THREE.Group();
+    const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.6, 5), woodMat);
+    rod.position.y = 0.3;
+    const rodG = new THREE.Group();
+    rodG.add(rod);
+    rodG.position.set(-0.35, 0.3, 0);
+    rodG.rotation.z = 1.45; // stowed: nearly flat over the stern (0.9 when fishing)
+    tackle.add(rodG);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xDDD8C8, transparent: true, opacity: 0 });
+    tackle.add(new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.82, 0.67, 0), new THREE.Vector3(-1.15, 0.02, 0)]),
+      lineMat
+    ));
+    const bobMat = new THREE.MeshBasicMaterial({ color: 0xD88C6A, transparent: true, opacity: 0 });
+    const bobber = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5), bobMat);
+    bobber.position.set(-1.15, 0.02, 0);
+    tackle.add(bobber);
+    tackle.userData = { bobber, rodG, lineMat, bobMat };
+    boat.add(tackle);
+    gNetwork.userData.tackle = tackle;
+    gNetwork.userData.fishMix = 0; // 0 = rod stowed, 1 = fishing
+    boat.position.set(6.3, 0.1, 3.2);
+    boat.rotation.y = -0.785; // facing out across the lake
     gNetwork.add(boat);
     gNetwork.userData.boat = boat;
+    gNetwork.userData.heading = -0.785; // smoothed-toward target heading
+    gNetwork.userData.rowMix = 0;       // 0 = oars shipped, 1 = full stroke
+    // the crossing itself: dock shore -> far-hamlet shore, all inside the lake
+    gNetwork.userData.route = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(6.3, 0.1, 3.2), // just off the platform's north edge, not on it
+      new THREE.Vector3(7.3, 0.1, 4.2),
+      new THREE.Vector3(8.5, 0.1, 5.4),
+      new THREE.Vector3(9.5, 0.1, 6.7),
+    ]);
+    // the day on the water: row out, fish a while mid-lake, row on, visit, row home, rest
+    gNetwork.userData.legs = [
+      [0, 10, 0, 0.5, 'row'],
+      [10, 26, 0.5, 0.5, 'fish'],
+      [26, 36, 0.5, 1, 'row'],
+      [36, 42, 1, 1, 'rest'],
+      [42, 52, 1, 0, 'row'],
+      [52, 56, 0, 0, 'rest'],
+    ];
   })();
 
   // the watermill beside the river
@@ -510,8 +624,10 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     towerM.add(mDoor);
     towerM.position.set(mx, hAt(mx, mz), mz);
     gMill.add(towerM);
+    obstacles.push({ x: mx, z: mz, r: 1.4 });
+    obstacles.push({ x: -13.6, z: -5.8, r: 2.4 }); // the spring pool
     // the river: from the spring pool, past the mill, into the lake
-    const sPts = [[-12.6, -6.7], [-10.5, -8.6], [-7.6, -10.8], [-4.9, -10.1], [-2.6, -8.3], [-0.3, -6.5], [1.9, -5.0], [3.9, -3.7], [5.6, -2.5]].map(([x, z]) => new THREE.Vector3(x, 0, z));
+    const sPts = RIVER_PTS.map(([x, z]) => new THREE.Vector3(x, 0, z));
     const sCurve = new THREE.CatmullRomCurve3(sPts);
     const SEGS = 80;
     const rPos = [], rIdx = [];
@@ -566,6 +682,19 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     wheel.rotation.y = -0.66;
     gMill.add(wheel);
     gMill.userData.wheel = wheel;
+    // foam flecks drifting downstream sell the flow the wheel implies
+    const foamMat = new THREE.MeshBasicMaterial({ color: 0xEAF7F4, transparent: true, opacity: 0.75 });
+    const flow = [];
+    for (let i = 0; i < 12; i++) {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(0.05, 5, 4), foamMat);
+      m.scale.y = 0.35;
+      m.userData = { u: i / 12, sp: 0.038 + (i % 3) * 0.007, off: (rand() - 0.5) * 1.1 };
+      if (prefersReduced) m.visible = false;
+      gMill.add(m);
+      flow.push(m);
+    }
+    gMill.userData.flow = flow;
+    gMill.userData.curve = sCurve;
     const axle = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.1, 0.1), woodMat);
     axle.position.set(-5.2, hAt(-4.5, -10.0) + 0.9, -9.0);
     axle.rotation.y = 0.96;
@@ -611,8 +740,94 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     gParty.userData.butterflies = butterflies;
   })();
 
+  // ---------- villagers : little folk wandering freely, walking around things ----------
+  const gFolk = stageGroup();
+  const folk = [];
+  {
+    const folkCols = [0x065F46, 0xD88C6A, 0xF4CE6A, 0x4E6E8E];
+    // each villager roams a home patch; patches keep them off the river, lake and rim
+    const zones = [
+      { cx: 0, cz: 2, R: 5.0, sx: 0, sz: 2, sp: 0.55 },          // the village green
+      { cx: -5.4, cz: -3.2, R: 2.8, sx: -5.4, sz: -2.2, sp: 0.4 }, // the allotment
+      { cx: -4.5, cz: 9, R: 4.5, sx: -5.0, sz: 8.4, sp: 0.5 },   // the gathering green
+      { cx: 9.3, cz: 11.2, R: 2.4, sx: 9.6, sz: 10.2, sp: 0.4 }, // the far hamlet
+    ];
+    const walkableAt = (x, z) =>
+      Math.hypot(x, z) < 16
+      && Math.hypot(x - LAKE.x, z - LAKE.z) > LAKE.r + 0.5
+      && RIVER_PTS.every(([rx, rz]) => Math.hypot(x - rx, z - rz) > 1.35);
+    // the whole straight path must clear every obstacle circle, not just the endpoints
+    const segClear = (ax, az, bx, bz) => obstacles.every((o) => {
+      const dx = bx - ax, dz = bz - az;
+      const L2 = dx * dx + dz * dz || 1e-6;
+      const u = Math.max(0, Math.min(1, ((o.x - ax) * dx + (o.z - az) * dz) / L2));
+      return Math.hypot(ax + dx * u - o.x, az + dz * u - o.z) > o.r + 0.2;
+    });
+    const pathOk = (ax, az, bx, bz) => {
+      if (!walkableAt(bx, bz) || !segClear(ax, az, bx, bz)) return false;
+      for (let s = 0.1; s < 1; s += 0.1) if (!walkableAt(ax + (bx - ax) * s, az + (bz - az) * s)) return false;
+      return true;
+    };
+    gFolk.userData.pickTarget = function (v) {
+      for (let i = 0; i < 24; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const rr = 0.6 + Math.random() * (v.zone.R - 0.6);
+        const x = v.zone.cx + Math.cos(a) * rr, z = v.zone.cz + Math.sin(a) * rr;
+        if (pathOk(v.x, v.z, x, z)) { v.tx = x; v.tz = z; return true; }
+      }
+      return false;
+    };
+    // find a spot between two patches where both villagers can walk to stand a step apart
+    gFolk.userData.tryMeet = function (va, vb) {
+      for (let i = 0; i < 16; i++) {
+        const x = (va.zone.cx + vb.zone.cx) / 2 + (Math.random() - 0.5) * 3;
+        const z = (va.zone.cz + vb.zone.cz) / 2 + (Math.random() - 0.5) * 3;
+        const dx = vb.x - va.x, dz = vb.z - va.z;
+        const L = Math.hypot(dx, dz) || 1;
+        const ox = (dx / L) * 0.19, oz = (dz / L) * 0.19;
+        if (pathOk(va.x, va.z, x - ox, z - oz) && pathOk(vb.x, vb.z, x + ox, z + oz)) {
+          return { ax: x - ox, az: z - oz, bx: x + ox, bz: z + oz };
+        }
+      }
+      return null;
+    };
+    zones.forEach((zone, i) => {
+      const p = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.3, 6),
+        new THREE.MeshStandardMaterial({ color: folkCols[i], flatShading: true, roughness: 1 }));
+      body.position.y = 0.15; p.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
+      head.position.y = 0.38; p.add(head);
+      p.userData = { head, zone, sp: zone.sp, x: zone.sx, z: zone.sz, tx: zone.sx, tz: zone.sz, idle: 0.5 + i * 0.8, ph: rand() * Math.PI * 2, meeting: false };
+      p.position.set(zone.sx, hAt(zone.sx, zone.sz), zone.sz);
+      gFolk.add(p); folk.push(p);
+    });
+  }
+  // eight more villagers who only come out for the evening fire (hidden by day)
+  const fireGuests = [];
+  {
+    const guestCols = [0xA7D8C4, 0xC9A24B, 0x67A86B, 0xB85C48, 0x3E7CB8, 0xF2BFA4, 0x065F46, 0xD88C6A];
+    for (let i = 0; i < 8; i++) {
+      const p = new THREE.Group();
+      const body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.3, 6),
+        new THREE.MeshStandardMaterial({ color: guestCols[i], flatShading: true, roughness: 1 }));
+      body.position.y = 0.15; p.add(body);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
+      head.position.y = 0.38; p.add(head);
+      p.scale.setScalar(0.92 + rand() * 0.14);
+      p.userData = { head };
+      p.visible = false;
+      gFolk.add(p); fireGuests.push(p);
+    }
+  }
+  const fireCircle = [...folk, ...fireGuests]; // 12 seats: three along each of the four logs
+  // every so often two neighbours walk over and have a chat (the hamlet villager
+  // is across the lake, so meetups happen between the three western patches)
+  const meet = { phase: 'wait', timer: 9, a: 0, b: 0 };
+
   // ---------- clouds ----------
   const cloudMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.95 });
+  const cloudShadowMat = new THREE.MeshBasicMaterial({ color: 0x23402F, transparent: true, opacity: 0.07, depthWrite: false });
   const clouds = [];
   for (let i = 0; i < 6; i++) {
     const g = new THREE.Group();
@@ -626,8 +841,31 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     // drift near the camera and loom huge when parallax shifts the view
     g.position.set(Math.cos(a) * (10 + rand() * 12), 26 + rand() * 8, Math.sin(a) * (10 + rand() * 12));
     g.userData.a = a; g.userData.r = Math.hypot(g.position.x, g.position.z); g.userData.h = g.position.y;
+    // a soft shadow sweeps the lawn beneath each cloud
+    const sh = new THREE.Mesh(new THREE.CircleGeometry(2.4, 14), cloudShadowMat);
+    sh.rotation.x = -Math.PI / 2;
+    sh.scale.x = 1.5;
+    table.add(sh);
+    g.userData.shadow = sh;
     scene.add(g); clouds.push(g);
   }
+
+  // ---------- smoke : firepit + hall chimney ----------
+  function smokePlume(x, y, z, n, scale0, rise) {
+    const puffs = [];
+    for (let i = 0; i < n; i++) {
+      const mat = new THREE.MeshBasicMaterial({ color: 0xBDB7AA, transparent: true, opacity: 0, depthWrite: false });
+      const m = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 0), mat);
+      const life = 2.6 + rand() * 1.4;
+      m.userData = { x, y, z, age: rand() * life, life, drift: rand() * Math.PI * 2, scale0, rise };
+      table.add(m); puffs.push(m);
+    }
+    return puffs;
+  }
+  const smoke = prefersReduced ? [] : [
+    ...smokePlume(-8.2, hAt(-8.2, 6.6) + 0.75, 6.6, 5, 0.16, 1.9),
+    ...smokePlume(1.05, hAt(0, -2) + 3.1, -2, 4, 0.12, 1.5),
+  ];
 
   // ---------- night mode : the dark-mode toggle turns the village to dusk ----------
   let seed2 = 41;
@@ -678,26 +916,70 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   embers.visible = false;
   table.add(embers);
 
-  let isNight = false;
+  // at night the villagers gather on the log seats around the fire;
+  // by day they go back to wandering from wherever they left off
+  let folkAtFire = false;
+  function setFolkFire(on) {
+    folkAtFire = on;
+    if (meet.phase !== 'wait') {
+      for (const idx of [meet.a, meet.b]) {
+        folk[idx].userData.meeting = false;
+        folk[idx].userData.head.position.y = 0.38;
+      }
+      meet.phase = 'wait'; meet.timer = 12;
+    }
+    const gy = hAt(-8.2, 6.6);
+    fireCircle.forEach((p, s) => {
+      const v = p.userData;
+      if (on) {
+        // seat s -> log (s % 4), slot along the log (-1, 0, +1)
+        const a = ((s % 4) / 4) * Math.PI * 2 + Math.PI / 4;
+        const slot = Math.floor(s / 4) - 1;
+        const cx = -8.2 + Math.cos(a) * 1.5, cz = 6.6 + Math.sin(a) * 1.5;
+        const fx = cx + -Math.sin(a) * 0.38 * slot, fz = cz + Math.cos(a) * 0.38 * slot;
+        p.position.set(fx, gy + 0.15, fz); // settled onto the log, legs tucked
+        p.rotation.y = Math.atan2(-(6.6 - fz), -8.2 - fx); // facing the flames
+        p.rotation.z = 0;
+        p.visible = true;
+        if (v.zone) v.meeting = false;
+      } else if (v.zone) {
+        v.idle = 0.6 + (s % 4) * 0.7;
+        p.position.set(v.x, hAt(v.x, v.z), v.z);
+      } else {
+        p.visible = false; // the evening guests head home at dawn
+      }
+    });
+  }
+
+  // dusk falls as a tween, not a switch: the toggle sets a target and the
+  // animate loop eases nightT toward it, lerping every colour and light
+  const dayCol = { bg: new THREE.Color(0xF3EEE1), hemi: new THREE.Color(0xFFFBEA), ground: new THREE.Color(0xCBDCC4), sun: new THREE.Color(0xFFF2CE), cloud: new THREE.Color(0xFFFFFF) };
+  const nightCol = { bg: new THREE.Color(0x07211B), hemi: new THREE.Color(0x2E4A40), ground: new THREE.Color(0x0A1F18), sun: new THREE.Color(0x9FC4D8) /* moonlight */, cloud: new THREE.Color(0x3A4A44) };
+  windowMat.emissive.set(0xFFC97A);
+  windowMat.emissiveIntensity = 0;
+  const mix = (d, n, k) => d + (n - d) * k;
+  let nightTarget = 0, nightT = -1; // -1 = before first apply
+  function applyNight(k) {
+    scene.background.lerpColors(dayCol.bg, nightCol.bg, k);
+    hemi.color.lerpColors(dayCol.hemi, nightCol.hemi, k);
+    hemi.groundColor.lerpColors(dayCol.ground, nightCol.ground, k);
+    hemi.intensity = mix(1.2, 0.35, k);
+    sun.color.lerpColors(dayCol.sun, nightCol.sun, k);
+    sun.intensity = mix(1.4, 0.5, k);
+    fillL.intensity = mix(0.45, 0.12, k);
+    windowMat.emissiveIntensity = 0.85 * k;
+    cloudMat.color.lerpColors(dayCol.cloud, nightCol.cloud, k);
+    cloudMat.opacity = mix(0.95, 0.4, k);
+    stars.visible = k > 0.02;
+    starMat.opacity = 0.85 * k;
+    fireflies.visible = k > 0.3;
+    embers.visible = k > 0.3;
+    gParty.userData.butterflies.forEach((b) => { b.visible = k < 0.5; }); // butterflies roost at night
+    if ((k >= 0.5) !== folkAtFire) setFolkFire(k >= 0.5); // dusk: everyone gathers at the fire
+  }
   function setNight(on) {
-    if (on === isNight) return;
-    isNight = on;
-    scene.background.set(on ? 0x07211B : 0xF3EEE1);
-    hemi.color.set(on ? 0x2E4A40 : 0xFFFBEA);
-    hemi.groundColor.set(on ? 0x0A1F18 : 0xCBDCC4);
-    hemi.intensity = on ? 0.35 : 1.2;
-    sun.color.set(on ? 0x9FC4D8 : 0xFFF2CE); // moonlight
-    sun.intensity = on ? 0.5 : 1.4;
-    fillL.intensity = on ? 0.12 : 0.45;
-    windowMat.emissive.set(on ? 0xFFC97A : 0x000000);
-    windowMat.emissiveIntensity = on ? 0.85 : 0;
-    cloudMat.color.set(on ? 0x3A4A44 : 0xFFFFFF);
-    cloudMat.opacity = on ? 0.4 : 0.95;
-    if (gGather.userData.fireLight) gGather.userData.fireLight.intensity = on ? 2.6 : 1.4;
-    stars.visible = on;
-    fireflies.visible = on;
-    embers.visible = on;
-    gParty.userData.butterflies.forEach((b) => { b.visible = !on; }); // butterflies roost at night
+    nightTarget = on ? 1 : 0;
+    if (nightT < 0 || prefersReduced) { nightT = nightTarget; applyNight(nightT); }
   }
   new MutationObserver(() => setNight(document.documentElement.classList.contains('axs-dark-mode')))
     .observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
@@ -716,7 +998,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     { tx: -2,   ty: 0.9, tz: 3,    r: 17, h: 9.5, side: -1 },  // s3 homes round the green
     { tx: -5.4, ty: 0.9, tz: -3.6, r: 14, h: 9,  side:  1 },   // s35 co-op · the growing beds
     { tx: -3.6, ty: 0.8, tz: 9.6,  r: 15, h: 8.5, side: -1 },  // s4 the gathering green
-    { tx: 7.8,  ty: 0.4, tz: 5.5,  r: 20, h: 12, side:  1 },   // s5 lake + dock platform
+    { tx: 5.0,  ty: 0.8, tz: 4.5,  r: 23, h: 14, side:  1 },   // s5 the crossing · both hamlets + boat in frame
     { tx: -5.4, ty: 1.0, tz: -8.8, r: 13, h: 8,  side: -1 },   // s6 watermill + river
     { tx: 0,    ty: 1.2, tz: 0,    r: 40, h: 21, side:  1 },   // s7 follow · pull back out
   ];
@@ -739,6 +1021,10 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   });
 
   let smoothP = 0;
+  // one-time establishing shot: swoop down into the hero framing on first load
+  // (skipped for reduced motion, deep-link hashes, or reloads mid-page)
+  const doIntro = !prefersReduced && window.scrollY < window.innerHeight * 0.3 && !location.hash;
+  let introT = doIntro ? 0 : 1;
   const camTarget = new THREE.Vector3();
   const camRight = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
@@ -749,9 +1035,16 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     requestAnimationFrame(animate);
     const dt = Math.min(clock.getDelta(), 0.05);
     t += dt;
-    if (!prefersReduced) { smx += (mx - smx) * 0.03; smy += (my - smy) * 0.03; }
+    // exp(-dt·k) smoothing is frame-rate independent (per-frame factors run 2x fast at 120Hz)
+    if (!prefersReduced) { const pk = 1 - Math.exp(-dt * 1.8); smx += (mx - smx) * pk; smy += (my - smy) * pk; }
 
-    smoothP += (tourProgress() - smoothP) * (prefersReduced ? 1 : 0.055);
+    smoothP += (tourProgress() - smoothP) * (prefersReduced ? 1 : 1 - Math.exp(-dt * 3.3));
+
+    if (Math.abs(nightTarget - nightT) > 0.001) {
+      nightT += (nightTarget - nightT) * (1 - Math.exp(-dt * 2.4));
+      if (Math.abs(nightTarget - nightT) <= 0.001) nightT = nightTarget;
+      applyNight(nightT);
+    }
     const i0 = Math.floor(smoothP);
     const i1 = Math.min(i0 + 1, FOCI.length - 1);
     const f = ease(smoothP - i0);
@@ -759,8 +1052,17 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     const L = (k) => a[k] + (b[k] - a[k]) * f;
 
     const wide = window.innerWidth > 920;
-    const ang = 0.7 + smoothP * 0.55 + (prefersReduced ? 0 : t * 0.014);
-    const rad = L('r'), hgt = L('h');
+    let ang = 0.7 + smoothP * 0.55 + (prefersReduced ? 0 : t * 0.014);
+    let rad = L('r'), hgt = L('h');
+    // crane up and over between stops: clears the trees and reads like a drone move
+    hgt += Math.sin(f * Math.PI) * Math.min(6, Math.hypot(b.tx - a.tx, b.tz - a.tz) * 0.35 + Math.abs(b.r - a.r) * 0.18 + 1.2);
+    if (introT < 1) {
+      introT = Math.min(1, introT + dt / 3.0);
+      const iK = 1 - Math.pow(1 - introT, 3); // cubic ease-out descent
+      rad *= 1 + 1.1 * (1 - iK);
+      hgt += 26 * (1 - iK);
+      ang -= 0.9 * (1 - iK);
+    }
     camTarget.set(L('tx'), L('ty'), L('tz'));
     camera.position.set(
       camTarget.x + Math.cos(ang) * rad + smx * 3,
@@ -777,6 +1079,49 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
 
     // life in the model
     if (gMill.userData.wheel) gMill.userData.wheel.rotation.z = t * 0.7;
+    if (!prefersReduced) {
+      // lake ripple (gentle, so the waterline laps rather than waves)
+      const lkp = lakeGeo.attributes.position;
+      for (let i = 0; i < lkp.count; i++) {
+        const x = lakeBase[i * 3], z = lakeBase[i * 3 + 2];
+        lkp.setY(i, Math.sin(x * 1.4 + t * 0.9) * 0.022 + Math.sin(z * 1.7 - t * 0.7) * 0.018);
+      }
+      lkp.needsUpdate = true;
+      lakeGeo.computeVertexNormals();
+      // foam drifting downstream
+      for (const m of gMill.userData.flow) {
+        const u = m.userData.u = (m.userData.u + dt * m.userData.sp) % 1;
+        const p = gMill.userData.curve.getPointAt(u);
+        const tng = gMill.userData.curve.getTangentAt(u);
+        const w = (0.45 + u * 0.45) * 0.6 * m.userData.off;
+        let fy = hAt(p.x, p.z) + 0.1;
+        const fdp = Math.hypot(p.x + 13.6, p.z + 5.8);
+        if (fdp < 1.9) fy = Math.min(fy, 0.105); // match the river's dip under the pool
+        m.position.set(p.x - tng.z * w, fy, p.z + tng.x * w);
+      }
+      // fire flicker
+      const fl = gGather.userData.flames;
+      fl[0].scale.y = 1 + Math.sin(t * 7.3) * 0.1 + Math.sin(t * 13.7) * 0.05;
+      fl[1].scale.y = 1 + Math.sin(t * 9.1 + 1.2) * 0.13;
+      // smoke puffs: rise, swell, fade, respawn (fainter at night, embers take over)
+      for (const m of smoke) {
+        const s = m.userData;
+        s.age += dt;
+        if (s.age > s.life) { s.age = 0; s.drift = Math.random() * Math.PI * 2; }
+        const u = s.age / s.life;
+        m.position.set(
+          s.x + Math.sin(t * 0.6 + s.drift) * 0.1 + u * 0.5,
+          s.y + u * s.rise,
+          s.z + Math.cos(t * 0.5 + s.drift) * 0.08
+        );
+        m.scale.setScalar(s.scale0 * (0.6 + u * 1.8));
+        m.material.opacity = Math.sin(Math.min(u * 3, 1) * Math.PI / 2) * 0.32 * (1 - u) * (1 - nightT * 0.45);
+      }
+    }
+    if (gGather.userData.fireLight) {
+      gGather.userData.fireLight.intensity = mix(1.4, 2.6, Math.max(nightT, 0))
+        * (prefersReduced ? 1 : 1 + Math.sin(t * 11) * 0.05 + Math.sin(t * 5.3 + 2) * 0.05);
+    }
     gParty.userData.butterflies.forEach((b) => {
       if (!b.visible) return;
       const u = b.userData;
@@ -787,7 +1132,116 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       u.w1.rotation.y = fl; u.w2.rotation.y = -fl;
     });
     const boat = gNetwork.userData.boat;
-    if (boat) { boat.position.y = 0.1 + Math.sin(t * 0.9) * 0.035; boat.rotation.z = Math.sin(t * 0.7) * 0.04; }
+    if (boat && !prefersReduced) {
+      // 56s day on the water, with a fishing stop mid-lake
+      const cyc = t % 56;
+      let bu = 0, bmode = 'rest', bdir = 1;
+      for (const [l0, l1, u0, u1, m] of gNetwork.userData.legs) {
+        if (cyc >= l0 && cyc < l1) {
+          bu = u0 + (u1 - u0) * ease((cyc - l0) / (l1 - l0));
+          bmode = m; bdir = u1 >= u0 ? 1 : -1;
+          break;
+        }
+      }
+      const rp = gNetwork.userData.route.getPointAt(bu);
+      boat.position.set(rp.x, 0.1 + Math.sin(t * 0.9) * 0.035, rp.z);
+      boat.rotation.z = Math.sin(t * 0.7) * 0.04;
+      const rowing = bmode === 'row';
+      if (rowing) {
+        const rtg = gNetwork.userData.route.getTangentAt(Math.min(Math.max(bu, 0.01), 0.99));
+        gNetwork.userData.heading = Math.atan2(-rtg.z * bdir, rtg.x * bdir);
+      }
+      // the hull turns toward its heading instead of snapping (shortest way round)
+      const dh = Math.atan2(Math.sin(gNetwork.userData.heading - boat.rotation.y), Math.cos(gNetwork.userData.heading - boat.rotation.y));
+      boat.rotation.y += dh * (1 - Math.exp(-dt * 2));
+      // oars blend between full stroke and shipped-aft rather than switching
+      gNetwork.userData.rowMix += ((rowing ? 1 : 0) - gNetwork.userData.rowMix) * (1 - Math.exp(-dt * 2.2));
+      const rm = gNetwork.userData.rowMix;
+      gNetwork.userData.oars.forEach((o, oi) => {
+        const side = oi ? -1 : 1;
+        // a real stroke, not an orbit: blade dipped while pulling aft,
+        // lifted while swinging forward (lift follows the sweep's direction).
+        // the starboard oar is a scale-mirrored copy, so its yaw must be
+        // negated (side factor) for both oars to sweep the SAME way together
+        const th = t * 2.2;
+        const lift = Math.max(0, Math.cos(th)); // cos>0 = moving forward = blade out
+        o.rotation.y = side * (-0.85 * (1 - rm) + Math.sin(th) * 0.45 * rm);
+        o.rotation.x = side * (0.2 * (1 - rm) + (0.55 - 0.35 * lift) * rm);
+      });
+      // the rod raises and the line fades in, easing in and out of the fishing stop
+      gNetwork.userData.fishMix += ((bmode === 'fish' ? 1 : 0) - gNetwork.userData.fishMix) * (1 - Math.exp(-dt * 1.8));
+      const fm = gNetwork.userData.fishMix;
+      const tk = gNetwork.userData.tackle.userData;
+      tk.rodG.rotation.z = 1.45 - 0.55 * fm;
+      tk.lineMat.opacity = fm;
+      tk.bobMat.opacity = fm;
+      if (fm > 0.02) tk.bobber.position.y = 0.02 + Math.sin(t * 2.2) * 0.025;
+    }
+    if (folkAtFire && !prefersReduced) {
+      // fireside: seated, swapping stories — staggered nods around the circle
+      fireCircle.forEach((p, i) => {
+        p.userData.head.position.y = 0.38 + Math.max(0, Math.sin(t * 1.8 + i * 1.7)) * 0.02;
+        p.rotation.z = Math.sin(t * 1.1 + i) * 0.03;
+      });
+    }
+    if (!folkAtFire && !prefersReduced) {
+      meet.timer -= dt;
+      if (meet.phase === 'wait' && meet.timer <= 0) {
+        const pairs = [[0, 1], [0, 2], [1, 2]];
+        const [ia, ib] = pairs[(Math.random() * pairs.length) | 0];
+        const spot = gFolk.userData.tryMeet(folk[ia].userData, folk[ib].userData);
+        if (spot) {
+          meet.phase = 'gather'; meet.a = ia; meet.b = ib;
+          const va = folk[ia].userData, vb = folk[ib].userData;
+          va.meeting = true; va.idle = 0; va.tx = spot.ax; va.tz = spot.az;
+          vb.meeting = true; vb.idle = 0; vb.tx = spot.bx; vb.tz = spot.bz;
+        } else meet.timer = 6; // no clear ground today, try again shortly
+      }
+      if (meet.phase === 'gather') {
+        const va = folk[meet.a].userData, vb = folk[meet.b].userData;
+        if (Math.hypot(va.tx - va.x, va.tz - va.z) < 0.09 && Math.hypot(vb.tx - vb.x, vb.tz - vb.z) < 0.09) {
+          meet.phase = 'chat'; meet.timer = 4 + Math.random() * 4;
+          folk[meet.a].rotation.y = Math.atan2(-(vb.z - va.z), vb.x - va.x);
+          folk[meet.b].rotation.y = Math.atan2(-(va.z - vb.z), va.x - vb.x);
+        }
+      }
+      if (meet.phase === 'chat') {
+        // they take turns nodding while they talk
+        for (const [idx, ph] of [[meet.a, 0], [meet.b, Math.PI]]) {
+          const pp = folk[idx];
+          pp.userData.head.position.y = 0.38 + Math.max(0, Math.sin(t * 3.2 + ph)) * 0.025;
+          pp.rotation.z = Math.sin(t * 1.6 + ph) * 0.04;
+        }
+        if (meet.timer <= 0) {
+          meet.phase = 'wait'; meet.timer = 18 + Math.random() * 25;
+          for (const idx of [meet.a, meet.b]) {
+            folk[idx].userData.meeting = false;
+            folk[idx].userData.idle = 0.8 + Math.random() * 1.5;
+            folk[idx].userData.head.position.y = 0.38;
+          }
+        }
+      }
+      for (const p of folk) {
+        const v = p.userData;
+        if (v.idle > 0) {
+          v.idle -= dt;
+          p.rotation.z = Math.sin(t * 1.2 + v.ph) * 0.03; // standing, looking about
+          if (v.idle <= 0 && !gFolk.userData.pickTarget(v)) v.idle = 1.5 + Math.random() * 2;
+        } else {
+          const dx = v.tx - v.x, dz = v.tz - v.z;
+          const dist = Math.hypot(dx, dz);
+          if (dist < 0.07) {
+            if (!v.meeting) v.idle = 1 + Math.random() * 5; // meeters wait for their friend
+          } else {
+            const step = Math.min(dist, v.sp * dt);
+            v.x += (dx / dist) * step; v.z += (dz / dist) * step;
+            p.rotation.y = Math.atan2(-dz, dx);
+            p.rotation.z = Math.sin(t * 7 + v.ph) * 0.05;
+            p.position.set(v.x, hAt(v.x, v.z) + Math.abs(Math.sin(t * 7 + v.ph)) * 0.02, v.z);
+          }
+        }
+      }
+    }
     if (fireflies.visible) {
       const fp = ffGeo.attributes.position;
       for (let i = 0; i < FF; i++) {
@@ -795,7 +1249,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
         fp.array[i * 3 + 1] += Math.sin(t * 0.6 + ffSeed[i] * 1.7) * 0.005;
       }
       fp.needsUpdate = true;
-      ffMat.opacity = 0.5 + Math.sin(t * 1.4) * 0.35;
+      ffMat.opacity = (0.5 + Math.sin(t * 1.4) * 0.35) * nightT;
     }
     if (embers.visible) {
       const ep = embGeo.attributes.position;
@@ -810,12 +1264,17 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
         }
       }
       ep.needsUpdate = true;
-      embMat.opacity = 0.55 + Math.sin(t * 6.5) * 0.2;
+      embMat.opacity = (0.55 + Math.sin(t * 6.5) * 0.2) * nightT;
     }
     clouds.forEach((c) => {
       c.userData.a += dt * 0.012;
       c.position.set(Math.cos(c.userData.a) * c.userData.r, c.userData.h, Math.sin(c.userData.a) * c.userData.r);
+      const sh = c.userData.shadow;
+      const onDisc = Math.hypot(c.position.x, c.position.z) < 15.5;
+      sh.visible = onDisc;
+      if (onDisc) sh.position.set(c.position.x, Math.max(hAt(c.position.x, c.position.z), 0.1) + 0.08, c.position.z);
     });
+    cloudShadowMat.opacity = 0.07 * (1 - nightT * 0.7);
 
     renderer.render(scene, camera);
   }
