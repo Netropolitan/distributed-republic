@@ -539,7 +539,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     }
     const fisher = new THREE.Group();
     const fBody = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.22, 6),
-      new THREE.MeshStandardMaterial({ color: 0xC9A24B, flatShading: true, roughness: 1 }));
+      new THREE.MeshStandardMaterial({ color: 0x22A06B, flatShading: true, roughness: 1 })); // green top against the wood hull
     fBody.position.y = 0.12; fisher.add(fBody);
     const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.075, 7, 6), skinMat);
     fHead.position.y = 0.3; fisher.add(fHead);
@@ -562,30 +562,35 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       oars.push(oar);
     }
     gNetwork.userData.oars = oars;
+    // the rod stays aboard, lying low over the stern; it raises to fish and the
+    // line + float fade in with it — no pop between states
     const tackle = new THREE.Group();
     const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.018, 0.6, 5), woodMat);
     rod.position.y = 0.3;
     const rodG = new THREE.Group();
     rodG.add(rod);
-    rodG.position.set(-0.15, 0.3, 0.1);
-    rodG.rotation.z = -0.9; // tip leans out over the bow
+    rodG.position.set(-0.35, 0.3, 0);
+    rodG.rotation.z = 1.45; // stowed: nearly flat over the stern (0.9 when fishing)
     tackle.add(rodG);
+    const lineMat = new THREE.LineBasicMaterial({ color: 0xDDD8C8, transparent: true, opacity: 0 });
     tackle.add(new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.32, 0.67, 0.1), new THREE.Vector3(0.72, 0.02, 0.1)]),
-      new THREE.LineBasicMaterial({ color: 0xDDD8C8 })
+      new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-0.82, 0.67, 0), new THREE.Vector3(-1.15, 0.02, 0)]),
+      lineMat
     ));
-    const bobber = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5),
-      new THREE.MeshBasicMaterial({ color: 0xD88C6A }));
-    bobber.position.set(0.72, 0.02, 0.1);
+    const bobMat = new THREE.MeshBasicMaterial({ color: 0xD88C6A, transparent: true, opacity: 0 });
+    const bobber = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5), bobMat);
+    bobber.position.set(-1.15, 0.02, 0);
     tackle.add(bobber);
-    tackle.visible = false;
-    tackle.userData.bobber = bobber;
+    tackle.userData = { bobber, rodG, lineMat, bobMat };
     boat.add(tackle);
     gNetwork.userData.tackle = tackle;
+    gNetwork.userData.fishMix = 0; // 0 = rod stowed, 1 = fishing
     boat.position.set(6.3, 0.1, 3.2);
     boat.rotation.y = -0.785; // facing out across the lake
     gNetwork.add(boat);
     gNetwork.userData.boat = boat;
+    gNetwork.userData.heading = -0.785; // smoothed-toward target heading
+    gNetwork.userData.rowMix = 0;       // 0 = oars shipped, 1 = full stroke
     // the crossing itself: dock shore -> far-hamlet shore, all inside the lake
     gNetwork.userData.route = new THREE.CatmullRomCurve3([
       new THREE.Vector3(6.3, 0.1, 3.2), // just off the platform's north edge, not on it
@@ -758,16 +763,33 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const u = Math.max(0, Math.min(1, ((o.x - ax) * dx + (o.z - az) * dz) / L2));
       return Math.hypot(ax + dx * u - o.x, az + dz * u - o.z) > o.r + 0.2;
     });
+    const pathOk = (ax, az, bx, bz) => {
+      if (!walkableAt(bx, bz) || !segClear(ax, az, bx, bz)) return false;
+      for (let s = 0.1; s < 1; s += 0.1) if (!walkableAt(ax + (bx - ax) * s, az + (bz - az) * s)) return false;
+      return true;
+    };
     gFolk.userData.pickTarget = function (v) {
       for (let i = 0; i < 24; i++) {
         const a = Math.random() * Math.PI * 2;
         const rr = 0.6 + Math.random() * (v.zone.R - 0.6);
         const x = v.zone.cx + Math.cos(a) * rr, z = v.zone.cz + Math.sin(a) * rr;
-        let ok = walkableAt(x, z) && segClear(v.x, v.z, x, z);
-        for (let s = 0.25; ok && s < 1; s += 0.25) ok = walkableAt(v.x + (x - v.x) * s, v.z + (z - v.z) * s);
-        if (ok) { v.tx = x; v.tz = z; return true; }
+        if (pathOk(v.x, v.z, x, z)) { v.tx = x; v.tz = z; return true; }
       }
       return false;
+    };
+    // find a spot between two patches where both villagers can walk to stand a step apart
+    gFolk.userData.tryMeet = function (va, vb) {
+      for (let i = 0; i < 16; i++) {
+        const x = (va.zone.cx + vb.zone.cx) / 2 + (Math.random() - 0.5) * 3;
+        const z = (va.zone.cz + vb.zone.cz) / 2 + (Math.random() - 0.5) * 3;
+        const dx = vb.x - va.x, dz = vb.z - va.z;
+        const L = Math.hypot(dx, dz) || 1;
+        const ox = (dx / L) * 0.19, oz = (dz / L) * 0.19;
+        if (pathOk(va.x, va.z, x - ox, z - oz) && pathOk(vb.x, vb.z, x + ox, z + oz)) {
+          return { ax: x - ox, az: z - oz, bx: x + ox, bz: z + oz };
+        }
+      }
+      return null;
     };
     zones.forEach((zone, i) => {
       const p = new THREE.Group();
@@ -776,11 +798,14 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       body.position.y = 0.15; p.add(body);
       const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
       head.position.y = 0.38; p.add(head);
-      p.userData = { zone, sp: zone.sp, x: zone.sx, z: zone.sz, tx: zone.sx, tz: zone.sz, idle: 0.5 + i * 0.8, ph: rand() * Math.PI * 2 };
+      p.userData = { head, zone, sp: zone.sp, x: zone.sx, z: zone.sz, tx: zone.sx, tz: zone.sz, idle: 0.5 + i * 0.8, ph: rand() * Math.PI * 2, meeting: false };
       p.position.set(zone.sx, hAt(zone.sx, zone.sz), zone.sz);
       gFolk.add(p); folk.push(p);
     });
   }
+  // every so often two neighbours walk over and have a chat (the hamlet villager
+  // is across the lake, so meetups happen between the three western patches)
+  const meet = { phase: 'wait', timer: 9, a: 0, b: 0 };
 
   // ---------- clouds ----------
   const cloudMat = new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: 0.95 });
@@ -1071,18 +1096,65 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const rowing = bmode === 'row';
       if (rowing) {
         const rtg = gNetwork.userData.route.getTangentAt(Math.min(Math.max(bu, 0.01), 0.99));
-        boat.rotation.y = Math.atan2(-rtg.z * bdir, rtg.x * bdir);
+        gNetwork.userData.heading = Math.atan2(-rtg.z * bdir, rtg.x * bdir);
       }
+      // the hull turns toward its heading instead of snapping (shortest way round)
+      const dh = Math.atan2(Math.sin(gNetwork.userData.heading - boat.rotation.y), Math.cos(gNetwork.userData.heading - boat.rotation.y));
+      boat.rotation.y += dh * (1 - Math.exp(-dt * 2));
+      // oars blend between full stroke and shipped-aft rather than switching
+      gNetwork.userData.rowMix += ((rowing ? 1 : 0) - gNetwork.userData.rowMix) * (1 - Math.exp(-dt * 2.2));
+      const rm = gNetwork.userData.rowMix;
       gNetwork.userData.oars.forEach((o, oi) => {
         const side = oi ? -1 : 1;
-        o.rotation.y = rowing ? Math.sin(t * 2.6) * 0.45 : 0.85; // sweep, or shipped aft
-        o.rotation.x = side * (rowing ? 0.5 + Math.sin(t * 2.6 + Math.PI / 2) * 0.18 : 0.2);
+        o.rotation.y = 0.85 * (1 - rm) + Math.sin(t * 2.2) * 0.45 * rm;
+        o.rotation.x = side * (0.2 * (1 - rm) + (0.5 + Math.sin(t * 2.2 + Math.PI / 2) * 0.18) * rm);
       });
-      const tackle = gNetwork.userData.tackle;
-      tackle.visible = bmode === 'fish';
-      if (tackle.visible) tackle.userData.bobber.position.y = 0.02 + Math.sin(t * 2.2) * 0.025;
+      // the rod raises and the line fades in, easing in and out of the fishing stop
+      gNetwork.userData.fishMix += ((bmode === 'fish' ? 1 : 0) - gNetwork.userData.fishMix) * (1 - Math.exp(-dt * 1.8));
+      const fm = gNetwork.userData.fishMix;
+      const tk = gNetwork.userData.tackle.userData;
+      tk.rodG.rotation.z = 1.45 - 0.55 * fm;
+      tk.lineMat.opacity = fm;
+      tk.bobMat.opacity = fm;
+      if (fm > 0.02) tk.bobber.position.y = 0.02 + Math.sin(t * 2.2) * 0.025;
     }
     if (gFolk.visible && !prefersReduced) {
+      meet.timer -= dt;
+      if (meet.phase === 'wait' && meet.timer <= 0) {
+        const pairs = [[0, 1], [0, 2], [1, 2]];
+        const [ia, ib] = pairs[(Math.random() * pairs.length) | 0];
+        const spot = gFolk.userData.tryMeet(folk[ia].userData, folk[ib].userData);
+        if (spot) {
+          meet.phase = 'gather'; meet.a = ia; meet.b = ib;
+          const va = folk[ia].userData, vb = folk[ib].userData;
+          va.meeting = true; va.idle = 0; va.tx = spot.ax; va.tz = spot.az;
+          vb.meeting = true; vb.idle = 0; vb.tx = spot.bx; vb.tz = spot.bz;
+        } else meet.timer = 6; // no clear ground today, try again shortly
+      }
+      if (meet.phase === 'gather') {
+        const va = folk[meet.a].userData, vb = folk[meet.b].userData;
+        if (Math.hypot(va.tx - va.x, va.tz - va.z) < 0.09 && Math.hypot(vb.tx - vb.x, vb.tz - vb.z) < 0.09) {
+          meet.phase = 'chat'; meet.timer = 4 + Math.random() * 4;
+          folk[meet.a].rotation.y = Math.atan2(-(vb.z - va.z), vb.x - va.x);
+          folk[meet.b].rotation.y = Math.atan2(-(va.z - vb.z), va.x - vb.x);
+        }
+      }
+      if (meet.phase === 'chat') {
+        // they take turns nodding while they talk
+        for (const [idx, ph] of [[meet.a, 0], [meet.b, Math.PI]]) {
+          const pp = folk[idx];
+          pp.userData.head.position.y = 0.38 + Math.max(0, Math.sin(t * 3.2 + ph)) * 0.025;
+          pp.rotation.z = Math.sin(t * 1.6 + ph) * 0.04;
+        }
+        if (meet.timer <= 0) {
+          meet.phase = 'wait'; meet.timer = 18 + Math.random() * 25;
+          for (const idx of [meet.a, meet.b]) {
+            folk[idx].userData.meeting = false;
+            folk[idx].userData.idle = 0.8 + Math.random() * 1.5;
+            folk[idx].userData.head.position.y = 0.38;
+          }
+        }
+      }
       for (const p of folk) {
         const v = p.userData;
         if (v.idle > 0) {
@@ -1093,7 +1165,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
           const dx = v.tx - v.x, dz = v.tz - v.z;
           const dist = Math.hypot(dx, dz);
           if (dist < 0.07) {
-            v.idle = 1 + Math.random() * 5;
+            if (!v.meeting) v.idle = 1 + Math.random() * 5; // meeters wait for their friend
           } else {
             const step = Math.min(dist, v.sp * dt);
             v.x += (dx / dist) * step; v.z += (dz / dist) * step;
