@@ -55,7 +55,7 @@ import EmailSignup from '../components/EmailSignup.astro';
     // Posts to the DR contact webhook (Tailscale Funnel route /dr-contact),
     // which the native automation engine turns into a Brew table row + A-Mail.
     // Endpoint is wired when the backend Contact feature ships.
-    const CONTACT_ENDPOINT = ''; // e.g. https://<funnel-host>/dr-contact
+    const CONTACT_ENDPOINT = 'https://kamino.taila07ff3.ts.net/dr-contact/e8c94bf180c27baadbd692992e4283b5';
     const form = document.getElementById('dr-contact') as HTMLFormElement | null;
     const status = document.getElementById('dr-contact-status');
     form?.addEventListener('submit', async (e) => {

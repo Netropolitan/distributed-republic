@@ -1,9 +1,12 @@
 ---
 import Base from '../layouts/Base.astro';
-// The live events feed will embed here via an iframe served through Tailscale
-// Funnel (the Brew events public-delivery pattern), filtered to DR-tagged events.
-// Placeholder until the backend Events feature is wired.
-const EVENTS_EMBED_SRC = ''; // e.g. https://<funnel-host>/events/embed?tag=dr
+// Live feed of DR-branded events from the Brew events backend, fetched client-side
+// through the Tailscale Funnel route (/events-api), filtered to brand=DR. Events are
+// created and managed in Brew (DR Events admin auto-applies the DR brand); publishing
+// one there makes it appear here automatically. Registration uses the shared Brew
+// public registration page. The empty state shows until the first DR event is published.
+const DR_EVENTS_API = 'https://kamino.taila07ff3.ts.net/events-api?brand=DR';
+const REGISTER_BASE = 'https://kamino.taila07ff3.ts.net/events-widget.html';
 ---
 <Base title="Events · Distributed Republic" description="Gatherings, open days, shared meals, and conversations about community living with Distributed Republic.">
   <section class="container section">
@@ -11,15 +14,67 @@ const EVENTS_EMBED_SRC = ''; // e.g. https://<funnel-host>/events/embed?tag=dr
     <h1>Gatherings, visits, and conversations.</h1>
     <p class="lead" style="max-width:62ch">Open days, shared meals, work weekends, and conversations about community living. This is where we meet in person and online.</p>
 
-    <div style="margin-top:32px">
-      {EVENTS_EMBED_SRC ? (
-        <iframe src={EVENTS_EMBED_SRC} title="Distributed Republic events" style="width:100%;min-height:680px;border:2px solid var(--forest-dark);border-radius:16px" loading="lazy"></iframe>
-      ) : (
-        <div class="card" style="text-align:center;padding:56px 28px;max-width:640px;margin:0 auto">
-          <h2 style="font-size:clamp(24px,2.4vw,32px)">No events listed yet</h2>
-          <p style="margin:0 auto">Our first gatherings are being planned. Check back soon, or <a href="/contact/">tell us you would like to be invited</a>.</p>
-        </div>
-      )}
+    <div id="dr-events" style="margin-top:32px" data-api={DR_EVENTS_API} data-register={REGISTER_BASE}>
+      <div class="card" style="text-align:center;padding:56px 28px;max-width:640px;margin:0 auto">
+        <h2 style="font-size:clamp(24px,2.4vw,32px)">No events listed yet</h2>
+        <p style="margin:0 auto">Our first gatherings are being planned. Check back soon, or <a href="/contact/">tell us you would like to be invited</a>.</p>
+      </div>
     </div>
   </section>
+
+  <script>
+    const root = document.getElementById('dr-events');
+    if (root) {
+      const api = root.dataset.api as string;
+      const registerBase = root.dataset.register as string;
+      const fmtDate = (iso: string) => {
+        try { return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }); }
+        catch { return iso; }
+      };
+      const esc = (s: string) => (s || '').replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c] as string));
+
+      fetch(api)
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((events: any[]) => {
+          const upcoming = Array.isArray(events) ? events : [];
+          if (!upcoming.length) return; // keep the empty-state markup already rendered
+          const cards = upcoming.map((ev) => {
+            const spots = ev.spots_remaining;
+            const closed = !ev.registration_open || (spots !== null && spots <= 0);
+            const where = ev.venue_type === 'online' ? 'Online' : (ev.location || 'In person');
+            return `
+              <article class="card dr-event-card">
+                <div class="dr-event-meta">
+                  <span class="dr-tag dr-tag--date">${esc(fmtDate(ev.date_start))}</span>
+                  <span class="dr-tag">${esc(ev.event_type || 'gathering')}</span>
+                  <span class="dr-tag">${esc(where)}</span>
+                </div>
+                <h3 style="margin:12px 0 6px">${esc(ev.title)}</h3>
+                <p style="margin:0 0 18px">${esc(ev.description || '')}</p>
+                <div class="dr-event-foot">
+                  <a class="btn btn--solid" href="${registerBase}#${encodeURIComponent(ev.slug)}" target="_blank" rel="noopener">${closed ? 'Full' : 'Register'}</a>
+                  <span class="dr-event-spots">${spots === null ? '' : spots + ' spots left'}</span>
+                </div>
+              </article>`;
+          }).join('');
+          root.innerHTML = `<div class="dr-event-grid">${cards}</div>`;
+        })
+        .catch(() => { /* leave the empty state in place on any error */ });
+    }
+  </script>
+
+  <style>
+    .dr-event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 22px; }
+    .dr-event-card { display: flex; flex-direction: column; padding: 24px; }
+    .dr-event-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+    .dr-tag {
+      font-size: 12px; font-weight: 700; letter-spacing: 0.3px; text-transform: capitalize;
+      padding: 4px 10px; border-radius: 8px; border: 1.5px solid var(--forest-dark);
+      background: var(--cream); color: var(--forest-dark);
+    }
+    .dr-tag--date { background: var(--sage-soft); }
+    .dr-event-foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .dr-event-spots { font-size: 13px; color: var(--body-grey); }
+  </style>
 </Base>
