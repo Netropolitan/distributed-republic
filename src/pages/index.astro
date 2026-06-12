@@ -328,7 +328,51 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   const roofMat = new THREE.MeshStandardMaterial({ color: 0xD88C6A, flatShading: true, roughness: 1 });
   const roofMat2 = new THREE.MeshStandardMaterial({ color: 0x065F46, flatShading: true, roughness: 1 });
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x84603F, flatShading: true, roughness: 1 });
-  const skinMat = new THREE.MeshStandardMaterial({ color: 0xE8C39E, flatShading: true, roughness: 1 });
+  // a spread of natural skin tones and hair colours so the villagers look like real people
+  const SKIN_TONES = [0xF3D7BE, 0xE8C39E, 0xD9A878, 0xC68C5A, 0xA66B3C, 0x7E4E2C, 0x5A3A22];
+  const HAIR_COLS = [0x1E1712, 0x3A2A1C, 0x5A3D26, 0x7A5230, 0xA9763C, 0xD0A85A, 0xB8B0A4, 0x8A8A8A];
+  // build a head: skin sphere + one of several low-poly hairstyles, grouped so it
+  // bobs as one (animation moves head.position.y). rng is the seeded rand for determinism.
+  function makeHead(rng, r = 0.08) {
+    const head = new THREE.Group();
+    head.position.y = 0.38;
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(r, 7, 6),
+      new THREE.MeshStandardMaterial({ color: SKIN_TONES[Math.floor(rng() * SKIN_TONES.length)], flatShading: true, roughness: 1 }));
+    head.add(ball);
+    const hMat = new THREE.MeshStandardMaterial({ color: HAIR_COLS[Math.floor(rng() * HAIR_COLS.length)], flatShading: true, roughness: 1 });
+    const cap = (scale, phi) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(r * 1.04, 8, 6, 0, Math.PI * 2, 0, phi), hMat);
+      m.scale.setScalar(scale); m.position.y = r * 0.05; return m;
+    };
+    const style = Math.floor(rng() * 6);
+    if (style === 0) {                                   // close crop
+      head.add(cap(1, Math.PI * 0.55));
+    } else if (style === 1) {                            // top bun
+      head.add(cap(1, Math.PI * 0.5));
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(r * 0.42, 6, 5), hMat);
+      bun.position.set(-r * 0.2, r * 0.9, 0); head.add(bun);
+    } else if (style === 2) {                            // ponytail trailing behind (-x)
+      head.add(cap(1, Math.PI * 0.55));
+      const tail = new THREE.Mesh(new THREE.CapsuleGeometry(r * 0.3, r * 0.9, 3, 6), hMat);
+      tail.position.set(-r * 0.85, -r * 0.1, 0); tail.rotation.z = 0.5; head.add(tail);
+    } else if (style === 3) {                            // rounded bob to the jaw
+      const bob = cap(1.05, Math.PI * 0.82); bob.scale.z = 1.12; head.add(bob);
+    } else if (style === 4) {                            // curly / afro cluster
+      for (let c = 0; c < 7; c++) {
+        const a = (c / 7) * Math.PI * 2;
+        const curl = new THREE.Mesh(new THREE.IcosahedronGeometry(r * 0.4, 0), hMat);
+        curl.position.set(Math.cos(a) * r * 0.6, r * 0.55 + (rng() - 0.5) * r * 0.3, Math.sin(a) * r * 0.6);
+        head.add(curl);
+      }
+      const crown = new THREE.Mesh(new THREE.IcosahedronGeometry(r * 0.5, 0), hMat);
+      crown.position.y = r * 0.85; head.add(crown);
+    } else {                                             // swept side part, longer at the nape
+      head.add(cap(1.02, Math.PI * 0.6));
+      const nape = new THREE.Mesh(new THREE.SphereGeometry(r * 0.7, 7, 6), hMat);
+      nape.scale.set(1, 0.7, 0.6); nape.position.set(-r * 0.55, -r * 0.15, 0); head.add(nape);
+    }
+    return head;
+  }
   const leafMats = [0x4F8F5C, 0x67A86B, 0x3E7B4E].map(c => new THREE.MeshStandardMaterial({ color: c, flatShading: true, roughness: 1 }));
 
   function tree(g, x, z, s = 1) {
@@ -541,7 +585,7 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
     const fBody = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.1, 0.22, 6),
       new THREE.MeshStandardMaterial({ color: 0x22A06B, flatShading: true, roughness: 1 })); // green top against the wood hull
     fBody.position.y = 0.12; fisher.add(fBody);
-    const fHead = new THREE.Mesh(new THREE.SphereGeometry(0.075, 7, 6), skinMat);
+    const fHead = makeHead(rand, 0.075);
     fHead.position.y = 0.3; fisher.add(fHead);
     fisher.position.set(-0.3, 0.25, 0);
     boat.add(fisher);
@@ -796,8 +840,8 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.3, 6),
         new THREE.MeshStandardMaterial({ color: folkCols[i], flatShading: true, roughness: 1 }));
       body.position.y = 0.15; p.add(body);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
-      head.position.y = 0.38; p.add(head);
+      const head = makeHead(rand);
+      p.add(head);
       p.userData = { head, zone, sp: zone.sp, x: zone.sx, z: zone.sz, tx: zone.sx, tz: zone.sz, idle: 0.5 + i * 0.8, ph: rand() * Math.PI * 2, meeting: false };
       p.position.set(zone.sx, hAt(zone.sx, zone.sz), zone.sz);
       gFolk.add(p); folk.push(p);
@@ -812,8 +856,8 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
       const body = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.3, 6),
         new THREE.MeshStandardMaterial({ color: guestCols[i], flatShading: true, roughness: 1 }));
       body.position.y = 0.15; p.add(body);
-      const head = new THREE.Mesh(new THREE.SphereGeometry(0.08, 7, 6), skinMat);
-      head.position.y = 0.38; p.add(head);
+      const head = makeHead(rand);
+      p.add(head);
       p.scale.setScalar(0.92 + rand() * 0.14);
       p.userData = { head };
       p.visible = false;
