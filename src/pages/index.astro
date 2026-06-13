@@ -309,10 +309,13 @@ const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: '2-digit', month: 
   );
   lakeMesh.position.set(LAKE.x, 0.1, LAKE.z);
   table.add(lakeMesh);
+  // far-hamlet house footprints, so shore stones don't clip into a wall
+  const hamletHouses = [[9.2, 11.6], [11.6, 9.8], [7.2, 12.8]];
   for (let i = 0; i < 12; i++) {
     const a = (i / 12) * Math.PI * 2 + 0.3;
     const sx = LAKE.x + Math.cos(a) * (LAKE.r + 0.5), sz = LAKE.z + Math.sin(a) * (LAKE.r + 0.5);
     if (Math.hypot(sx, sz) > 16.3) continue;
+    if (hamletHouses.some(([hx, hz]) => Math.hypot(sx - hx, sz - hz) < 1.7)) continue;
     const st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.16 + rand() * 0.12, 0),
       new THREE.MeshStandardMaterial({ color: 0xC8BCA2, flatShading: true, roughness: 1 }));
     st.position.set(sx, hAt(sx, sz) + 0.12, sz);
