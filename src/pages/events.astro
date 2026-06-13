@@ -5,8 +5,8 @@ import Base from '../layouts/Base.astro';
 // created and managed in Brew (DR Events admin auto-applies the DR brand); publishing
 // one there makes it appear here automatically. Registration uses the shared Brew
 // public registration page. The empty state shows until the first DR event is published.
-const DR_EVENTS_API = 'https://kamino.taila07ff3.ts.net/events-api?brand=DR';
-const REGISTER_BASE = 'https://kamino.taila07ff3.ts.net/events-widget.html';
+const DR_EVENTS_API = 'https://api.runrevolution.org/api/events/public?brand=DR';
+const REGISTER_BASE = 'https://api.runrevolution.org/events-widget.html';
 ---
 <Base title="Events · Distributed Republic" description="Gatherings, open days, shared meals, and conversations about community living with Distributed Republic.">
   <section class="container section">
